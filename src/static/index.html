@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="ko" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>KRX ETF 포트폴리오</title>
+  <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0F172A">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            krx: {
+              red: '#E12343',
+              redLight: '#FEE2E2',
+              blue: '#1763B6',
+              blueLight: '#DBEAFE',
+              gray: '#94A3B8'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/css/style.css">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen antialiased selection:bg-blue-600 selection:text-white">
+
+  <!-- Desktop Backdrop Wrapper -->
+  <div class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex justify-center items-start">
+    
+    <!-- Mobile App Container (375~440px viewport centered) -->
+    <div class="w-full max-w-[440px] min-h-screen bg-slate-900 border-x border-slate-800 flex flex-col shadow-2xl relative pb-28">
+      
+      <!-- Top Navigation Bar -->
+      <header class="sticky top-0 z-30 bg-slate-900/90 backdrop-blur-md border-b border-slate-800/80 px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-md shadow-blue-500/20">
+            <i data-lucide="trending-up" class="w-5 h-5 text-white"></i>
+          </div>
+          <div>
+            <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-1.5">
+              KRX ETF 포트폴리오
+            </h1>
+            <div class="flex items-center gap-1.5 text-[11px] text-slate-400">
+              <span id="header-market-badge" class="inline-flex items-center gap-1 font-medium text-emerald-400">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span id="header-base-date">기준: 조회중...</span>
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="flex items-center gap-1">
+          <!-- Refresh button -->
+          <button id="btn-sync-market" class="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors touch-active disabled:opacity-50" title="시세 새로고침">
+            <span id="sync-icon-wrapper" class="inline-flex items-center justify-center">
+              <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+            </span>
+          </button>
+          <!-- Group settings button -->
+          <button id="btn-open-groups" class="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors touch-active" title="계좌 관리">
+            <i data-lucide="settings" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- Main Content Scroll Area -->
+      <main class="flex-1 px-4 pt-4 space-y-4">
+        
+        <!-- Total Valuation Card -->
+        <section class="bg-gradient-to-b from-slate-800/90 to-slate-800/40 border border-slate-700/60 rounded-2xl p-5 shadow-lg relative overflow-hidden">
+          <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl pointer-events-none"></div>
+          
+          <div class="flex justify-between items-start mb-1">
+            <span class="text-xs font-medium text-slate-400">총 평가금액</span>
+            <span id="card-as-of-badge" class="text-[11px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">종가 확정</span>
+          </div>
+          
+          <div class="flex items-baseline gap-1 mb-3">
+            <span class="text-sm font-semibold text-slate-400">₩</span>
+            <span id="total-valuation" class="text-3xl font-extrabold tracking-tight num-tabular text-white">0</span>
+          </div>
+          
+          <div class="grid grid-cols-2 gap-3 pt-3 border-t border-slate-700/60">
+            <div>
+              <span class="text-[11px] text-slate-400 block mb-0.5">투자원금</span>
+              <span id="total-invested" class="text-sm font-semibold num-tabular text-slate-200">₩ 0</span>
+            </div>
+            <div class="text-right">
+              <span class="text-[11px] text-slate-400 block mb-0.5">평가손익 (수익률)</span>
+              <div class="flex items-center justify-end gap-1.5">
+                <span id="total-pnl" class="text-sm font-bold num-tabular text-slate-400">₩ 0</span>
+                <span id="total-return-badge" class="text-xs px-1.5 py-0.5 rounded font-bold num-tabular bg-slate-800 text-slate-400">
+                  0.00%
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Account Group Filter Tabs -->
+        <nav class="space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">계좌별 포트폴리오</span>
+            <button id="btn-quick-add-group" class="text-[11px] text-blue-400 hover:text-blue-300 font-medium flex items-center gap-0.5">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i> 계좌 추가
+            </button>
+          </div>
+          <div id="group-tabs-container" class="flex gap-2 overflow-x-auto no-scrollbar py-1 text-xs">
+            <!-- Rendered by JS: 전체, 연금저축, IRP, ISA... -->
+            <button class="px-3 py-1.5 rounded-full bg-blue-600 text-white font-semibold whitespace-nowrap shadow-sm">
+              전체
+            </button>
+          </div>
+        </nav>
+
+        <!-- Account Allocation Bar (Visible when '전체' is selected) -->
+        <section id="allocation-section" class="bg-slate-800/40 border border-slate-800 rounded-xl p-3.5 space-y-2.5">
+          <div class="flex justify-between items-center text-xs">
+            <span class="font-medium text-slate-300">자산 배분 비중</span>
+            <span id="allocation-total-count" class="text-slate-400 text-[11px]">총 0종목</span>
+          </div>
+          <!-- Stacked Progress Bar -->
+          <div id="allocation-bar" class="w-full h-2.5 bg-slate-700/50 rounded-full overflow-hidden flex">
+            <!-- Segments rendered by JS -->
+          </div>
+          <!-- Allocation Legend & Mini summary -->
+          <div id="allocation-legend" class="flex flex-wrap gap-2 text-[11px] pt-1">
+            <!-- Rendered by JS -->
+          </div>
+        </section>
+
+        <!-- Selected Account Single Card (Visible when specific account is active) -->
+        <section id="single-account-section" class="hidden bg-slate-800/40 border border-slate-800 rounded-xl p-3.5 space-y-2">
+          <div class="flex justify-between items-center">
+            <div class="flex items-center gap-2">
+              <span id="single-acc-color-dot" class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+              <span id="single-acc-name" class="font-semibold text-sm text-white">연금저축</span>
+              <span id="single-acc-type" class="text-[11px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-300">연금저축</span>
+            </div>
+            <span id="single-acc-weight" class="text-xs font-semibold text-blue-400">비중 0%</span>
+          </div>
+          <div class="grid grid-cols-3 gap-2 pt-2 border-t border-slate-800 text-center">
+            <div>
+              <span class="text-[10px] text-slate-400 block">평가금액</span>
+              <span id="single-acc-valuation" class="text-xs font-bold text-white num-tabular">₩ 0</span>
+            </div>
+            <div>
+              <span class="text-[10px] text-slate-400 block">투자원금</span>
+              <span id="single-acc-invested" class="text-xs font-medium text-slate-300 num-tabular">₩ 0</span>
+            </div>
+            <div>
+              <span class="text-[10px] text-slate-400 block">수익률</span>
+              <span id="single-acc-pnl" class="text-xs font-bold num-tabular text-slate-400">0.00%</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Holdings Section -->
+        <section class="space-y-3">
+          <div class="flex justify-between items-center">
+            <div class="flex items-center gap-1.5">
+              <h2 class="text-sm font-bold text-white">보유 종목</h2>
+              <span id="holdings-count-badge" class="text-xs px-1.5 py-0.5 rounded-full bg-slate-800 text-slate-400 font-medium">0</span>
+            </div>
+            
+            <!-- Sort Selector -->
+            <select id="sort-selector" class="bg-slate-800 border border-slate-700 text-slate-300 text-[11px] rounded-lg px-2 py-1 focus:outline-none focus:border-blue-500">
+              <option value="valuation_desc">평가금액순</option>
+              <option value="return_rate_desc">수익률 높은순</option>
+              <option value="return_rate_asc">수익률 낮은순</option>
+              <option value="name_asc">종목명순</option>
+            </select>
+          </div>
+
+          <!-- Holdings List Container -->
+          <div id="holdings-list" class="space-y-2.5"></div>
+
+          <!-- Empty state placeholder -->
+          <div id="holdings-empty-state" class="hidden py-12 px-4 text-center border border-dashed border-slate-800 rounded-2xl bg-slate-900/50">
+            <div class="w-12 h-12 mx-auto rounded-full bg-slate-800/80 flex items-center justify-center text-slate-500 mb-3">
+              <i data-lucide="pie-chart" class="w-6 h-6"></i>
+            </div>
+            <p class="text-sm font-medium text-slate-300 mb-1">등록된 보유 종목이 없습니다</p>
+            <p class="text-xs text-slate-500 mb-4">하단의 매수 기록 버튼을 눌러 ETF를 추가해보세요.</p>
+            <button id="btn-empty-add" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-blue-600/30 transition-all touch-active">
+              + 첫 ETF 매수 기록하기
+            </button>
+          </div>
+        </section>
+
+        <!-- Compliance & Legal Disclaimer Card -->
+        <footer class="pt-4 pb-6">
+          <div class="p-3.5 rounded-xl bg-slate-800/20 border border-slate-800/60 text-slate-500 text-[11px] leading-relaxed space-y-1">
+            <div class="flex items-center gap-1 font-semibold text-slate-400">
+              <i data-lucide="shield-alert" class="w-3.5 h-3.5"></i>
+              <span>투자 유의사항 안내</span>
+            </div>
+            <p>본 서비스는 개인 투자자의 편의를 위한 투자 정보 기록·집계 도구이며, 투자자문 및 매매 권유가 아닙니다.</p>
+            <p>수익률 계산은 한국거래소(KRX) 일별 종가 기준이며, 분배금(배당) 및 세금은 별도 반영되지 않은 가격 수익률입니다.</p>
+          </div>
+        </footer>
+
+      </main>
+
+      <!-- Sticky Floating Action Bottom Bar -->
+      <div class="fixed bottom-0 left-0 right-0 z-20 flex justify-center pointer-events-none">
+        <div class="w-full max-w-[440px] px-4 pb-4 pt-2 bg-gradient-to-t from-slate-900 via-slate-900/90 to-transparent pointer-events-auto">
+          <button id="btn-open-buy" class="w-full py-3.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-sm rounded-2xl shadow-xl shadow-blue-600/30 flex items-center justify-center gap-2 transition-all touch-active">
+            <i data-lucide="plus-circle" class="w-5 h-5"></i>
+            <span>ETF 매수 기록하기</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================= MODALS & BOTTOM SHEETS ================= -->
+
+  <!-- 1. Search & Buy Modal / Bottom Sheet -->
+  <div id="modal-buy" class="fixed inset-0 z-50 modal-backdrop flex items-end justify-center hidden">
+    <div class="w-full max-w-[440px] max-h-[92vh] bg-slate-900 border-t border-x border-slate-800 rounded-t-3xl shadow-2xl flex flex-col animate-slide-up overflow-hidden">
+      
+      <!-- Modal Top Handle & Header -->
+      <div class="px-5 pt-3 pb-3 border-b border-slate-800 flex items-center justify-between">
+        <div class="w-10 h-1 bg-slate-700 rounded-full mx-auto absolute top-2 left-1/2 -translate-x-1/2"></div>
+        <h3 id="buy-modal-title" class="text-base font-bold text-white mt-1">ETF 매수 기록</h3>
+        <button id="btn-close-buy-modal" class="p-1 rounded-full text-slate-400 hover:text-white hover:bg-slate-800 mt-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Step 1: Search ETF View -->
+      <div id="buy-step-search" class="flex-1 flex flex-col p-4 overflow-y-auto space-y-3">
+        <!-- Search Input with Clear Button -->
+        <div class="relative">
+          <i data-lucide="search" class="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+          <input 
+            type="text" 
+            id="etf-search-input"
+            placeholder="종목명, 티커(069500), 초성(ㅋㄷㅅ) 검색..." 
+            class="w-full pl-10 pr-10 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500 font-medium"
+            autocomplete="off"
+            autofocus
+          >
+          <button id="btn-clear-search" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white hidden">
+            <i data-lucide="x-circle" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <!-- Quick Chosung Chips -->
+        <div class="space-y-1.5">
+          <span class="text-[11px] text-slate-400 font-medium">인기 운용사 브랜드 초성</span>
+          <div class="flex flex-wrap gap-1.5">
+            <button class="quick-chip px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 text-xs hover:bg-slate-700 font-medium" data-query="ㅋㄷㅅ">ㅋㄷㅅ (KODEX)</button>
+            <button class="quick-chip px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 text-xs hover:bg-slate-700 font-medium" data-query="ㅌㅇㄱ">ㅌㅇㄱ (TIGER)</button>
+            <button class="quick-chip px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 text-xs hover:bg-slate-700 font-medium" data-query="ㅇㅇㅅ">ㅇㅇㅅ (ACE)</button>
+            <button class="quick-chip px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 text-xs hover:bg-slate-700 font-medium" data-query="SOL">SOL</button>
+            <button class="quick-chip px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 text-xs hover:bg-slate-700 font-medium" data-query="RISE">RISE</button>
+            <button class="quick-chip px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 text-xs hover:bg-slate-700 font-medium" data-query="S&P500">S&P500</button>
+          </div>
+        </div>
+
+        <!-- Search Results List -->
+        <div class="flex-1 space-y-2 pt-2">
+          <div class="flex justify-between items-center text-xs text-slate-400">
+            <span>검색 결과</span>
+            <span id="search-result-count">0건</span>
+          </div>
+          <div id="search-results-list" class="space-y-1.5 max-h-[48vh] overflow-y-auto no-scrollbar pb-6">
+            <!-- Results rendered by JS -->
+            <div class="py-8 text-center text-slate-500 text-xs">
+              검색어를 입력하면 실시간으로 KRX ETF가 검색됩니다.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Buy Input Form (Hidden initially) -->
+      <div id="buy-step-form" class="hidden flex-1 flex flex-col p-4 overflow-y-auto space-y-4">
+        <!-- Selected ETF Card Header -->
+        <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-3.5 flex justify-between items-center">
+          <div>
+            <div class="flex items-center gap-2 mb-0.5">
+              <span id="form-ticker" class="text-xs font-mono px-1.5 py-0.5 rounded bg-slate-700 text-slate-300">000000</span>
+              <span id="form-issuer" class="text-[11px] text-slate-400">운용사</span>
+            </div>
+            <h4 id="form-name" class="text-sm font-bold text-white">종목명</h4>
+          </div>
+          <div class="text-right">
+            <span class="text-[10px] text-slate-400 block">기준 종가</span>
+            <span id="form-close-price" class="text-sm font-bold text-white num-tabular">₩ 0</span>
+          </div>
+        </div>
+
+        <!-- Existing Holding Alert Banner (Conditional) -->
+        <div id="existing-holding-banner" class="hidden p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs space-y-1">
+          <div class="flex items-center gap-1.5 font-bold">
+            <i data-lucide="info" class="w-4 h-4 text-amber-400"></i>
+            <span>이미 보유 중인 종목입니다</span>
+          </div>
+          <p id="existing-holding-desc" class="text-[11px] text-amber-200/90 leading-relaxed">
+            현재 0주 (평단 ₩0) 보유 중입니다. 추가 매수 시 <strong>가중평균 평단가</strong>로 자동 합산 계산됩니다.
+          </p>
+        </div>
+
+        <!-- Account Group Selection -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-slate-300">매수 계좌 선택</label>
+          <div id="form-group-pills" class="flex flex-wrap gap-2">
+            <!-- Group buttons rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Purchase Price Input -->
+        <div class="space-y-1.5">
+          <div class="flex justify-between items-center">
+            <label for="input-buy-price" class="text-xs font-bold text-slate-300">1주당 매수가격 (원)</label>
+            <button id="btn-use-market-price" class="text-[11px] text-blue-400 hover:text-blue-300 font-medium">
+              종가로 입력
+            </button>
+          </div>
+          <div class="relative">
+            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-semibold text-sm">₩</span>
+            <input 
+              type="text" 
+              id="input-buy-price" 
+              inputmode="numeric"
+              class="w-full pl-8 pr-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white font-bold num-tabular text-sm focus:outline-none focus:border-blue-500"
+              placeholder="0"
+            >
+          </div>
+        </div>
+
+        <!-- Quantity Input with Quick Add Buttons -->
+        <div class="space-y-1.5">
+          <label for="input-buy-qty" class="text-xs font-bold text-slate-300">매수 수량 (주)</label>
+          <div class="flex gap-2">
+            <input 
+              type="number" 
+              id="input-buy-qty" 
+              min="1" 
+              value="1" 
+              class="flex-1 px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white font-bold num-tabular text-sm focus:outline-none focus:border-blue-500"
+            >
+            <button class="btn-qty-add px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-xs font-semibold text-slate-200" data-add="1">+1</button>
+            <button class="btn-qty-add px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-xs font-semibold text-slate-200" data-add="10">+10</button>
+            <button class="btn-qty-add px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-xs font-semibold text-slate-200" data-add="50">+50</button>
+            <button class="btn-qty-add px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-xs font-semibold text-slate-200" data-add="100">+100</button>
+          </div>
+        </div>
+
+        <!-- Total Estimated Amount Display -->
+        <div class="p-3.5 rounded-xl bg-slate-800/40 border border-slate-800 flex justify-between items-center">
+          <span class="text-xs text-slate-400 font-medium">총 매수 예상 금액</span>
+          <span id="form-total-calc" class="text-base font-extrabold text-blue-400 num-tabular">₩ 0</span>
+        </div>
+
+        <!-- Date & Memo -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="space-y-1">
+            <label for="input-buy-date" class="text-[11px] font-medium text-slate-400">매수 일자</label>
+            <input 
+              type="date" 
+              id="input-buy-date" 
+              class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-xs focus:outline-none focus:border-blue-500"
+            >
+          </div>
+          <div class="space-y-1">
+            <label for="input-buy-memo" class="text-[11px] font-medium text-slate-400">메모 (선택)</label>
+            <input 
+              type="text" 
+              id="input-buy-memo" 
+              placeholder="예: 9월 정기적립" 
+              maxlength="100"
+              class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:border-blue-500"
+            >
+          </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="flex gap-2 pt-2 pb-4">
+          <button id="btn-back-to-search" class="w-1/3 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-colors">
+            이전
+          </button>
+          <button id="btn-submit-buy" class="flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-lg shadow-blue-600/30 transition-all touch-active">
+            매수 등록 완료
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 2. Holding Detail & Trade History Bottom Sheet -->
+  <div id="modal-holding-detail" class="fixed inset-0 z-50 modal-backdrop flex items-end justify-center hidden">
+    <div class="w-full max-w-[440px] max-h-[90vh] bg-slate-900 border-t border-x border-slate-800 rounded-t-3xl shadow-2xl flex flex-col animate-slide-up overflow-hidden">
+      
+      <!-- Top Bar -->
+      <div class="px-5 pt-3 pb-3 border-b border-slate-800 flex items-center justify-between">
+        <div class="w-10 h-1 bg-slate-700 rounded-full mx-auto absolute top-2 left-1/2 -translate-x-1/2"></div>
+        <div class="flex items-center gap-2 mt-1">
+          <span id="detail-group-badge" class="text-xs px-2 py-0.5 rounded-full text-white font-medium bg-blue-600">계좌</span>
+          <span id="detail-ticker" class="text-xs font-mono text-slate-400">000000</span>
+        </div>
+        <button id="btn-close-detail" class="p-1 rounded-full text-slate-400 hover:text-white hover:bg-slate-800 mt-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Detail Body -->
+      <div class="flex-1 p-5 overflow-y-auto space-y-5">
+        
+        <!-- Header Info -->
+        <div>
+          <h3 id="detail-name" class="text-lg font-extrabold text-white mb-1">종목명</h3>
+          <div class="flex items-baseline justify-between">
+            <div class="flex items-baseline gap-1.5">
+              <span class="text-xs text-slate-400">현재가</span>
+              <span id="detail-current-price" class="text-xl font-extrabold num-tabular text-white">₩ 0</span>
+            </div>
+            <span id="detail-change-rate" class="text-xs font-bold num-tabular px-2 py-0.5 rounded bg-slate-800 text-slate-400">
+              0.00%
+            </span>
+          </div>
+        </div>
+
+        <!-- Profit Summary Card -->
+        <div class="bg-slate-800/60 border border-slate-700/80 rounded-2xl p-4 space-y-3">
+          <div class="flex justify-between items-center">
+            <span class="text-xs text-slate-400">평가손익</span>
+            <div class="text-right">
+              <span id="detail-pnl" class="text-base font-bold num-tabular text-slate-300">₩ 0</span>
+              <span id="detail-return-rate" class="text-xs font-bold num-tabular ml-1 text-slate-400">(0.00%)</span>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3 pt-3 border-t border-slate-700/60">
+            <div>
+              <span class="text-[11px] text-slate-400 block">평가금액</span>
+              <span id="detail-valuation" class="text-sm font-bold text-white num-tabular">₩ 0</span>
+            </div>
+            <div>
+              <span class="text-[11px] text-slate-400 block">투자원금</span>
+              <span id="detail-invested" class="text-sm font-medium text-slate-300 num-tabular">₩ 0</span>
+            </div>
+            <div>
+              <span class="text-[11px] text-slate-400 block">보유수량</span>
+              <span id="detail-qty" class="text-sm font-bold text-white num-tabular">0주</span>
+            </div>
+            <div>
+              <span class="text-[11px] text-slate-400 block">매수 평단가</span>
+              <span id="detail-avg-price" class="text-sm font-bold text-white num-tabular">₩ 0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ETF Additional Spec -->
+        <div class="bg-slate-800/30 border border-slate-800 rounded-xl p-3 text-xs space-y-2">
+          <div class="flex justify-between">
+            <span class="text-slate-400">운용사</span>
+            <span id="detail-issuer" class="font-medium text-slate-200">-</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-400">순자산(AUM)</span>
+            <span id="detail-aum" class="font-medium text-slate-200">-</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-400">총보수</span>
+            <span id="detail-expense" class="font-medium text-slate-200">-</span>
+          </div>
+        </div>
+
+        <!-- Trade History List -->
+        <div class="space-y-2">
+          <div class="flex justify-between items-center text-xs">
+            <span class="font-bold text-slate-300">매수 거래 이력</span>
+            <span id="detail-tx-count" class="text-slate-500">0건</span>
+          </div>
+          <div id="detail-tx-list" class="space-y-1.5 max-h-48 overflow-y-auto no-scrollbar">
+            <!-- Transactions rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-2 pt-2 pb-4">
+          <button id="btn-detail-add-more" class="flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-lg shadow-blue-600/30 transition-colors touch-active">
+            + 추가 매수
+          </button>
+          <button id="btn-detail-edit" class="px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition-colors">
+            수정
+          </button>
+          <button id="btn-detail-delete" class="px-4 py-3 rounded-xl bg-red-950/40 hover:bg-red-900/60 border border-red-800/40 text-red-400 font-bold text-xs transition-colors">
+            삭제
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Edit Holding Modal -->
+  <div id="modal-edit-holding" class="fixed inset-0 z-50 modal-backdrop flex items-center justify-center hidden p-4">
+    <div class="w-full max-w-[380px] bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-5 space-y-4 animate-fade-in">
+      <div class="flex justify-between items-center">
+        <h3 class="text-base font-bold text-white">보유 정보 직접 수정</h3>
+        <button id="btn-close-edit-holding" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="text-xs font-semibold text-slate-300 block mb-1">수정할 평단가 (원)</label>
+          <input type="number" id="edit-avg-price" class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500 font-bold">
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-300 block mb-1">수정할 보유수량 (주)</label>
+          <input type="number" id="edit-quantity" class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500 font-bold">
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-300 block mb-1">메모</label>
+          <input type="text" id="edit-memo" class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500">
+        </div>
+      </div>
+
+      <div class="flex gap-2 pt-2">
+        <button id="btn-cancel-edit-holding" class="w-1/2 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">
+          취소
+        </button>
+        <button id="btn-save-edit-holding" class="w-1/2 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md shadow-blue-600/30">
+          수정 저장
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Group Management Modal -->
+  <div id="modal-groups" class="fixed inset-0 z-50 modal-backdrop flex items-end justify-center hidden">
+    <div class="w-full max-w-[440px] max-h-[85vh] bg-slate-900 border-t border-x border-slate-800 rounded-t-3xl shadow-2xl flex flex-col animate-slide-up overflow-hidden">
+      
+      <!-- Header -->
+      <div class="px-5 pt-3 pb-3 border-b border-slate-800 flex items-center justify-between">
+        <div class="w-10 h-1 bg-slate-700 rounded-full mx-auto absolute top-2 left-1/2 -translate-x-1/2"></div>
+        <h3 class="text-base font-bold text-white mt-1">계좌 그룹 관리</h3>
+        <button id="btn-close-groups" class="p-1 rounded-full text-slate-400 hover:text-white hover:bg-slate-800 mt-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Content -->
+      <div class="flex-1 p-5 overflow-y-auto space-y-4">
+        
+        <!-- Group List -->
+        <div class="space-y-2">
+          <span class="text-xs font-semibold text-slate-400">현재 등록된 계좌</span>
+          <div id="groups-list" class="space-y-2">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Add Group Form Accordion -->
+        <div class="border-t border-slate-800 pt-4 space-y-3">
+          <span class="text-xs font-semibold text-white block">+ 새 계좌 추가</span>
+          <div class="space-y-2.5">
+            <div>
+              <label class="text-[11px] text-slate-400 block mb-1">계좌명</label>
+              <input type="text" id="new-group-name" placeholder="예: 미래에셋 IRP, ISA 중개형" class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-xs focus:outline-none focus:border-blue-500">
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="text-[11px] text-slate-400 block mb-1">계좌 유형</label>
+                <select id="new-group-type" class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-xs focus:outline-none focus:border-blue-500">
+                  <option value="연금저축">연금저축</option>
+                  <option value="IRP">IRP</option>
+                  <option value="DC">DC</option>
+                  <option value="ISA">ISA</option>
+                  <option value="일반">일반</option>
+                  <option value="기타">기타</option>
+                </select>
+              </div>
+              <div>
+                <label class="text-[11px] text-slate-400 block mb-1">태그 색상</label>
+                <div class="flex items-center gap-1.5 pt-1">
+                  <input type="color" id="new-group-color" value="#3B82F6" class="w-8 h-8 rounded-lg bg-transparent border-0 cursor-pointer">
+                  <span id="color-hex-preview" class="text-xs font-mono text-slate-400">#3B82F6</span>
+                </div>
+              </div>
+            </div>
+            <button id="btn-create-group" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-md transition-colors">
+              계좌 추가하기
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Group Delete Guard Confirmation Dialog -->
+  <div id="modal-group-delete-guard" class="fixed inset-0 z-50 modal-backdrop flex items-center justify-center hidden p-4">
+    <div class="w-full max-w-[380px] bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-5 space-y-4 animate-fade-in">
+      <div class="flex items-center gap-2 text-amber-400">
+        <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+        <h3 class="text-base font-bold text-white">계좌 삭제 안전 확인</h3>
+      </div>
+      
+      <p id="delete-guard-desc" class="text-xs text-slate-300 leading-relaxed">
+        이 계좌에 보유 종목이 포함되어 있습니다. 어떻게 처리하시겠습니까?
+      </p>
+
+      <div class="space-y-2.5">
+        <!-- Option 1: Migrate holdings to another group -->
+        <div class="p-3 rounded-xl bg-slate-800/80 border border-slate-700 space-y-2">
+          <label class="text-xs font-bold text-slate-200 block">1. 다른 계좌로 종목 일괄 이관 후 삭제 (권장)</label>
+          <select id="transfer-target-group-select" class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white text-xs">
+            <!-- Other groups rendered here -->
+          </select>
+          <button id="btn-confirm-transfer-delete" class="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg transition-colors">
+            이관 후 삭제 진행
+          </button>
+        </div>
+
+        <!-- Option 2: Force delete holdings -->
+        <div class="p-3 rounded-xl bg-red-950/30 border border-red-900/50 space-y-2">
+          <label class="text-xs font-bold text-red-400 block">2. 종목 및 거래내역 전체 영구 삭제</label>
+          <button id="btn-confirm-force-delete" class="w-full py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-lg transition-colors">
+            모든 종목과 함께 영구 삭제
+          </button>
+        </div>
+      </div>
+
+      <button id="btn-cancel-group-delete" class="w-full py-2 text-slate-400 hover:text-white text-xs font-semibold">
+        취소
+      </button>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-[400px] px-4 pointer-events-none space-y-2">
+    <!-- Toasts dynamically appended by JS -->
+  </div>
+
+  <!-- Main Application Logic -->
+  <script src="/js/app.js?v=1.0.2"></script>
+</body>
+</html>
