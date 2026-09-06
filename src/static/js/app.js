@@ -334,12 +334,13 @@ function renderHoldings() {
 
   if (holdings.length === 0) {
     listContainer.innerHTML = '';
-    listContainer.appendChild(emptyState);
-    emptyState.classList.remove('hidden');
+    listContainer.classList.add('hidden');
+    if (emptyState) emptyState.classList.remove('hidden');
     return;
   }
 
-  emptyState.classList.add('hidden');
+  if (emptyState) emptyState.classList.add('hidden');
+  listContainer.classList.remove('hidden');
   listContainer.innerHTML = '';
 
   holdings.forEach((h) => {
