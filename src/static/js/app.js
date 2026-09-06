@@ -99,8 +99,16 @@ async function syncMarketPrices() {
   if (state.isSyncing) return;
   state.isSyncing = true;
   
+  const syncBtn = document.getElementById('btn-sync-market');
+  const syncWrapper = document.getElementById('sync-icon-wrapper');
   const refreshIcon = document.getElementById('icon-refresh');
-  if (refreshIcon) refreshIcon.classList.add('animate-spin');
+
+  if (syncBtn) syncBtn.disabled = true;
+  if (syncWrapper) {
+    syncWrapper.classList.add('animate-spin');
+  } else if (refreshIcon) {
+    refreshIcon.classList.add('animate-spin');
+  }
   showToast('KRX 일별 종가 시세를 갱신 중입니다...', 'info');
 
   try {
@@ -118,7 +126,16 @@ async function syncMarketPrices() {
     showToast('시세 동기화 중 오류가 발생했습니다.', 'error');
   } finally {
     state.isSyncing = false;
-    if (refreshIcon) refreshIcon.classList.remove('animate-spin');
+    const btn = document.getElementById('btn-sync-market');
+    if (btn) {
+      btn.disabled = false;
+      btn.classList.remove('animate-spin');
+      btn.querySelectorAll('*').forEach((el) => el.classList.remove('animate-spin'));
+    }
+    const wrapper = document.getElementById('sync-icon-wrapper');
+    if (wrapper) wrapper.classList.remove('animate-spin');
+    const icon = document.getElementById('icon-refresh');
+    if (icon) icon.classList.remove('animate-spin');
   }
 }
 
@@ -1083,8 +1100,21 @@ function setupEventListeners() {
 // Register Service Worker for PWA
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch((err) => {
+    navigator.serviceWorker.register('/sw.js').then((reg) => {
+      reg.update();
+    }).catch((err) => {
       console.log('Service Worker registration skipped:', err);
+    });
+  });
+}
+
+// Clear stale service worker caches
+if ('caches' in window) {
+  caches.keys().then((keys) => {
+    keys.forEach((key) => {
+      if (key !== 'etf-portfolio-cache-v2') {
+        caches.delete(key);
+      }
     });
   });
 }
