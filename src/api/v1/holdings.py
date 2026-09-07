@@ -7,6 +7,7 @@ from src.core.database import get_db
 from src.core.exceptions import EntityNotFoundException
 from src.schemas.holding import (
     HoldingCreateRequest,
+    HoldingReorderRequest,
     HoldingResponse,
     HoldingUpdateRequest,
 )
@@ -35,6 +36,23 @@ async def create_or_merge_holding(
         raise HTTPException(status_code=404, detail=e.message)
 
 
+@router.patch("/reorder", response_model=dict)
+@router.put("/reorder", response_model=dict)
+async def reorder_holdings(
+    data: HoldingReorderRequest,
+    user_id: uuid.UUID = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    """보유 종목 드래그 앤 드롭 표시 순서 일괄 저장."""
+    count = await holding_service.reorder_holdings(
+        db,
+        user_id=user_id,
+        holding_ids=data.holding_ids,
+        group_id=data.group_id,
+    )
+    return {"status": "success", "reordered_count": count}
+
+
 @router.get("/{holding_id}", response_model=HoldingResponse)
 async def get_holding(
     holding_id: uuid.UUID,
@@ -51,6 +69,7 @@ async def get_holding(
 
 
 @router.patch("/{holding_id}", response_model=HoldingResponse)
+@router.put("/{holding_id}", response_model=HoldingResponse)
 async def update_holding(
     holding_id: uuid.UUID,
     data: HoldingUpdateRequest,
