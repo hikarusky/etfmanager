@@ -107,6 +107,8 @@ async def delete_group(
     group_id: uuid.UUID,
     delete_holdings: bool = Query(False, description="보유 종목 함께 삭제 여부"),
     target_group_id: uuid.UUID | None = Query(None, description="보유 종목을 이관할 대상 그룹 ID"),
+    force_delete_holdings: bool = Query(False, description="하위 호환용 파라미터"),
+    transfer_to_group_id: uuid.UUID | None = Query(None, description="하위 호환용 파라미터"),
     user_id: uuid.UUID = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
@@ -114,13 +116,15 @@ async def delete_group(
     계좌 그룹 삭제 (PRD F-05).
     보유 종목이 존재하는 경우 delete_holdings=true 또는 target_group_id를 반드시 지정해야 합니다.
     """
+    eff_delete_holdings = delete_holdings or force_delete_holdings
+    eff_target_group_id = target_group_id or transfer_to_group_id
     try:
         await group_service.delete_group(
             db,
             user_id=user_id,
             group_id=group_id,
-            delete_holdings=delete_holdings,
-            target_group_id=target_group_id,
+            delete_holdings=eff_delete_holdings,
+            target_group_id=eff_target_group_id,
         )
     except EntityNotFoundException as e:
         raise HTTPException(status_code=404, detail=e.message)
