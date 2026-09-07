@@ -624,10 +624,10 @@ function renderHoldings() {
 
       <div class="mb-3">
         <h3 class="text-sm font-bold text-white tracking-tight leading-snug line-clamp-1">${h.name_kr}</h3>
-        <p class="text-[11px] text-slate-400 num-tabular mt-0.5 leading-relaxed">
-          <span class="whitespace-nowrap">보유 <strong class="text-slate-200">${formatNumber(h.quantity)}주</strong></span>
-          <span class="whitespace-nowrap"> · 평단 <strong class="text-slate-200">${formatWon(h.avg_price)}</strong></span>
-          <span class="whitespace-nowrap"> · 원금 <strong class="text-slate-200">${formatWon(investedAmount)}</strong></span>
+        <p class="text-[13px] text-slate-300 num-tabular mt-1 leading-relaxed">
+          <span class="whitespace-nowrap">보유 <strong class="text-white font-semibold">${formatNumber(h.quantity)}주</strong></span>
+          <span class="whitespace-nowrap"> · 평단 <strong class="text-white font-semibold">${formatWon(h.avg_price)}</strong></span>
+          <span class="whitespace-nowrap"> · 원금 <strong class="text-white font-semibold">${formatWon(investedAmount)}</strong></span>
         </p>
       </div>
 
@@ -1657,7 +1657,7 @@ if ('serviceWorker' in navigator) {
 if ('caches' in window) {
   caches.keys().then((keys) => {
     keys.forEach((key) => {
-      if (key !== 'etf-portfolio-cache-v11') {
+      if (key !== 'etf-portfolio-cache-v12') {
         caches.delete(key);
       }
     });
