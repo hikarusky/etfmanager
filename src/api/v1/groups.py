@@ -75,6 +75,7 @@ async def get_group(
 
 
 @router.patch("/{group_id}", response_model=GroupResponse)
+@router.put("/{group_id}", response_model=GroupResponse)
 async def update_group(
     group_id: uuid.UUID,
     data: GroupUpdateRequest,
