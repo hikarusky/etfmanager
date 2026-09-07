@@ -18,6 +18,14 @@ STATIC_DIR = Path(__file__).resolve().parent / "static"
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage application startup and shutdown lifecycle."""
+    try:
+        from sqlalchemy import text
+        from src.core.database import engine
+        async with engine.begin() as conn:
+            await conn.execute(text("ALTER TABLE holding ADD COLUMN IF NOT EXISTS sort_order INT DEFAULT 0 NOT NULL;"))
+    except Exception as e:
+        print(f"[Lifespan Notice] Column check: {e}")
+
     market_scheduler.start()
     yield
     market_scheduler.stop()
