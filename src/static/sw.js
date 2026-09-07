@@ -1,4 +1,4 @@
-const CACHE_NAME = 'etf-portfolio-cache-v2';
+const CACHE_NAME = 'etf-portfolio-cache-v11';
 const ASSETS_TO_CACHE = [
   '/',
   '/css/style.css',
