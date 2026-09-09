@@ -19,9 +19,9 @@
         extend: {
           colors: {
             krx: {
-              red: '#E12343',
+              red: '#D0374C',
               redLight: '#FEE2E2',
-              blue: '#1763B6',
+              blue: '#60A5FA',
               blueLight: '#DBEAFE',
               gray: '#94A3B8'
             }
@@ -32,7 +32,7 @@
   </script>
   
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/style.css?v=1.0.17">
   
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -119,14 +119,14 @@
           
           <div class="grid grid-cols-2 gap-3 pt-3 border-t border-slate-700/60">
             <div>
-              <span class="text-[11px] text-slate-400 block mb-0.5">투자원금</span>
+              <span class="text-[13px] text-slate-100 block mb-0.5">투자원금</span>
               <span id="total-invested" class="text-sm font-semibold num-tabular text-slate-200">₩ 0</span>
             </div>
             <div class="text-right">
-              <span class="text-[11px] text-slate-400 block mb-0.5">평가손익 (수익률)</span>
+              <span class="text-[13px] text-slate-100 block mb-0.5">평가손익 (수익률)</span>
               <div class="flex items-center justify-end gap-1.5">
                 <span id="total-pnl" class="text-sm font-bold num-tabular text-slate-400">₩ 0</span>
-                <span id="total-return-badge" class="text-xs px-1.5 py-0.5 rounded font-bold num-tabular bg-slate-800 text-slate-400">
+                <span id="total-return-badge" class="text-xs px-1.5 py-0.5 rounded font-bold num-tabular bg-slate-400 text-slate-100">
                   0.00%
                 </span>
               </div>
@@ -137,9 +137,9 @@
         <!-- Account Group Filter Tabs -->
         <nav class="space-y-2">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">계좌별 포트폴리오</span>
-            <button id="btn-quick-add-group" class="text-[11px] text-blue-400 hover:text-blue-300 font-medium flex items-center gap-0.5">
-              <i data-lucide="plus" class="w-3.5 h-3.5"></i> 계좌 추가
+            <span class="text-sm font-bold text-slate-200 uppercase tracking-wider">계좌별 포트폴리오</span>
+            <button id="btn-quick-add-group" class="text-[12px] text-blue-400 hover:text-blue-300 font-medium flex items-center gap-0.5">
+              <i data-lucide="plus" class="w-4 h-4"></i> 계좌 추가
             </button>
           </div>
           <div id="group-tabs-container" class="flex gap-2 overflow-x-auto no-scrollbar py-1 text-xs">
@@ -153,8 +153,8 @@
         <!-- Account Allocation Bar (Visible when '전체' is selected) -->
         <section id="allocation-section" class="bg-slate-800/40 border border-slate-800 rounded-xl p-3.5 space-y-2.5">
           <div class="flex justify-between items-center text-xs">
-            <span class="font-medium text-slate-300">자산 배분 비중</span>
-            <span id="allocation-total-count" class="text-slate-400 text-[11px]">총 0종목</span>
+            <span class="font-medium text-slate-100">자산 배분 비중</span>
+            <span id="allocation-total-count" class="text-slate-100 text-[12px]">총 0종목</span>
           </div>
           <!-- Stacked Progress Bar -->
           <div id="allocation-bar" class="w-full h-2.5 bg-slate-700/50 rounded-full overflow-hidden flex">
@@ -184,20 +184,20 @@
           </div>
           <div class="grid grid-cols-4 gap-1.5 pt-2 border-t border-slate-800 text-center">
             <div>
-              <span class="text-[10px] text-slate-400 block mb-0.5 whitespace-nowrap">평가금액</span>
+              <span class="text-[12px] text-slate-100 block mb-0.5 whitespace-nowrap">평가금액</span>
               <span id="single-acc-valuation" class="text-xs font-bold text-white num-tabular truncate block">₩ 0</span>
             </div>
             <div>
-              <span class="text-[10px] text-slate-400 block mb-0.5 whitespace-nowrap">투자원금</span>
-              <span id="single-acc-invested" class="text-xs font-medium text-slate-300 num-tabular truncate block">₩ 0</span>
+              <span class="text-[12px] text-slate-100 block mb-0.5 whitespace-nowrap">투자원금</span>
+              <span id="single-acc-invested" class="text-xs font-bold text-white num-tabular truncate block">₩ 0</span>
             </div>
             <div>
-              <span class="text-[10px] text-slate-400 block mb-0.5 whitespace-nowrap">수익금</span>
-              <span id="single-acc-pnl-amount" class="text-xs font-bold num-tabular truncate block text-slate-400">₩ 0</span>
+              <span class="text-[12px] text-slate-100 block mb-0.5 whitespace-nowrap">수익금</span>
+              <span id="single-acc-pnl-amount" class="text-xs text-slate-100 font-bold num-tabular truncate block text-slate-100">₩ 0</span>
             </div>
             <div>
-              <span class="text-[10px] text-slate-400 block mb-0.5 whitespace-nowrap">수익률</span>
-              <span id="single-acc-return-rate" class="text-xs font-bold num-tabular truncate block text-slate-400">0.00%</span>
+              <span class="text-[12px] text-slate-100 block mb-0.5 whitespace-nowrap">수익률</span>
+              <span id="single-acc-return-rate" class="text-xs text-slate-100 font-bold num-tabular truncate block text-slate-100">0.00%</span>
             </div>
           </div>
         </section>
@@ -689,7 +689,7 @@
             <button type="button" class="w-5 h-5 rounded-full border border-white/20 hover:scale-110 transition-transform" style="background-color: #F5A623" data-color="#F5A623" title="오렌지"></button>
             <button type="button" class="w-5 h-5 rounded-full border border-white/20 hover:scale-110 transition-transform" style="background-color: #9013FE" data-color="#9013FE" title="퍼플"></button>
             <button type="button" class="w-5 h-5 rounded-full border border-white/20 hover:scale-110 transition-transform" style="background-color: #7ED321" data-color="#7ED321" title="그린"></button>
-            <button type="button" class="w-5 h-5 rounded-full border border-white/20 hover:scale-110 transition-transform" style="background-color: #E12343" data-color="#E12343" title="레드"></button>
+            <button type="button" class="w-5 h-5 rounded-full border border-white/20 hover:scale-110 transition-transform" style="background-color: #D0374C" data-color="#D0374C" title="레드"></button>
             <button type="button" class="w-5 h-5 rounded-full border border-white/20 hover:scale-110 transition-transform" style="background-color: #EC4899" data-color="#EC4899" title="핑크"></button>
             <button type="button" class="w-5 h-5 rounded-full border border-white/20 hover:scale-110 transition-transform" style="background-color: #06B6D4" data-color="#06B6D4" title="시안"></button>
           </div>
@@ -845,6 +845,6 @@
   </div>
 
   <!-- Main Application Logic -->
-  <script src="/js/app.js?v=1.0.14"></script>
+  <script src="/js/app.js?v=1.0.17"></script>
 </body>
 </html>
