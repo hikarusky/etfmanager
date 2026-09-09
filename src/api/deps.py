@@ -6,32 +6,30 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.database import get_db
 from src.models import User
 
-DEFAULT_USER_ID = uuid.UUID("88ba0ed8-3940-4f81-b21b-31b1984d0f12")
+DEFAULT_USER_ID = "hikarusky"
 
 
-def resolve_user_uuid(input_val: str | None) -> uuid.UUID:
+def resolve_user_uuid(input_val: str | None) -> str:
     """
-    Convert an input string (UUID or custom string) to a valid UUID.
-    If valid UUID format, returns it.
-    If arbitrary string is provided, returns deterministic UUIDv5.
-    If None or empty, returns DEFAULT_USER_ID.
+    Convert an input string (UUID, custom string, or None) to a valid user_id.
+    If None, empty, or DEFAULT_USER_ID, returns DEFAULT_USER_ID ('hikarusky').
     """
-    if not input_val or not input_val.strip():
+    if not input_val or not input_val.strip() or input_val.strip() in (DEFAULT_USER_ID, "88ba0ed8-3940-4f81-b21b-31b1984d0f12"):
         return DEFAULT_USER_ID
 
     cleaned = input_val.strip()
     try:
-        return uuid.UUID(cleaned)
+        return str(uuid.UUID(cleaned))
     except ValueError:
-        return uuid.uuid5(uuid.NAMESPACE_DNS, cleaned)
+        return str(uuid.uuid5(uuid.NAMESPACE_DNS, cleaned))
 
 
 async def get_current_user_id(
     x_user_id: str | None = Header(None),
     db: AsyncSession = Depends(get_db),
-) -> uuid.UUID:
+) -> str:
     """
-    Get current user ID from X-User-Id header or default to primary user UUID.
+    Get current user ID from X-User-Id header or default to primary user ('hikarusky').
     Ensures user record exists in PostgreSQL 'etf_portfolio' DB.
     """
     target_id = resolve_user_uuid(x_user_id)
