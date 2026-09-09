@@ -9,6 +9,7 @@ from src.api.v1.etfs import router as etfs_router
 from src.api.v1.groups import router as groups_router
 from src.api.v1.holdings import router as holdings_router
 from src.api.v1.sync import router as sync_router
+from src.api.v1.users import router as users_router
 from src.core.config import settings
 from src.services.scheduler import market_scheduler
 
@@ -55,6 +56,7 @@ app.include_router(groups_router, prefix=settings.API_V1_STR)
 app.include_router(holdings_router, prefix=settings.API_V1_STR)
 app.include_router(etfs_router, prefix=settings.API_V1_STR)
 app.include_router(sync_router, prefix=settings.API_V1_STR)
+app.include_router(users_router, prefix=settings.API_V1_STR)
 
 
 @app.get("/health", tags=["Health"])
