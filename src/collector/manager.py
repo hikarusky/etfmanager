@@ -3,6 +3,7 @@ import asyncio
 import logging
 from typing import Any
 
+from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -118,16 +119,49 @@ class CollectorManager:
         return saved_count
 
     async def save_prices_to_db(self, session: AsyncSession, prices: list[dict[str, Any]]) -> int:
-        """Upsert price records into etf_price_daily table."""
+        """Upsert price records into etf_price_daily table safely ensuring FK integrity."""
         if not prices:
             return 0
 
         logger.info(f"Saving {len(prices)} ETF daily price records to PostgreSQL '{settings.POSTGRES_DB}'...")
-        saved_count = 0
 
+        # 1. Fetch existing tickers in etf_master to prevent ForeignKeyViolationError
+        existing_result = await session.execute(select(ETFMaster.ticker))
+        existing_tickers = set(existing_result.scalars().all())
+
+        price_tickers = {p["ticker"] for p in prices if p.get("ticker")}
+        missing_tickers = price_tickers - existing_tickers
+
+        if missing_tickers:
+            logger.info(
+                f"Found {len(missing_tickers)} tickers in price data not yet present in etf_master. "
+                f"Triggering master sync..."
+            )
+            try:
+                source_m, masters = await self.collect_master()
+                if masters:
+                    await self.save_master_to_db(session, masters)
+                    existing_result = await session.execute(select(ETFMaster.ticker))
+                    existing_tickers = set(existing_result.scalars().all())
+            except Exception as e:
+                logger.error(f"Failed to auto-sync masters during price save: {e}")
+
+        # 2. Filter out any tickers that are still not present in etf_master
+        valid_prices = [p for p in prices if p.get("ticker") in existing_tickers]
+        skipped_count = len(prices) - len(valid_prices)
+        if skipped_count > 0:
+            logger.warning(
+                f"Skipped {skipped_count} prices because their tickers do not exist in etf_master."
+            )
+
+        if not valid_prices:
+            logger.warning("No valid price records to save after filtering.")
+            return 0
+
+        saved_count = 0
         batch_size = 200
-        for i in range(0, len(prices), batch_size):
-            batch = prices[i : i + batch_size]
+        for i in range(0, len(valid_prices), batch_size):
+            batch = valid_prices[i : i + batch_size]
             stmt_values = []
             for item in batch:
                 stmt_values.append({
