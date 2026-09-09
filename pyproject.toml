@@ -1,0 +1,28 @@
+[project]
+name = "etf"
+version = "0.1.0"
+description = "KRX ETF Portfolio Management Application"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "pydantic>=2.9.0",
+    "pydantic-settings>=2.6.0",
+    "sqlalchemy[asyncio]>=2.0.36",
+    "asyncpg>=0.30.0",
+    "jamo>=0.4.1",
+    "python-dotenv>=1.0.1",
+    "pykrx>=1.0.48",
+    "finance-datareader>=0.9.96",
+    "requests>=2.32.0",
+    "beautifulsoup4>=4.12.3",
+    "httpx>=0.28.0",
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "aiofiles>=25.1.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
