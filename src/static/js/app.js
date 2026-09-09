@@ -544,11 +544,25 @@ function renderAllocationOrAccountCard() {
     document.getElementById('single-acc-valuation').textContent = formatWon(grp.valuation_amount);
     document.getElementById('single-acc-invested').textContent = formatWon(grp.invested_amount);
 
-    const pnlEl = document.getElementById('single-acc-pnl');
     const pnlVal = parseFloat(grp.pnl || 0);
     const returnVal = parseFloat(grp.return_rate || 0);
-    pnlEl.textContent = formatPercent(returnVal);
-    pnlEl.className = `text-xs font-bold num-tabular ${getPnlClass(pnlVal)}`;
+    const pnlClass = getPnlClass(pnlVal);
+
+    // 1. 수익금 (평가손익)
+    const pnlAmountEl = document.getElementById('single-acc-pnl-amount');
+    if (pnlAmountEl) {
+      const sign = pnlVal > 0 ? '+' : (pnlVal < 0 ? '-' : '');
+      const formattedAmount = pnlVal !== 0 ? `${sign}₩ ${formatNumber(Math.abs(pnlVal))}` : '₩ 0';
+      pnlAmountEl.textContent = formattedAmount;
+      pnlAmountEl.className = `text-xs font-bold num-tabular truncate block ${pnlClass}`;
+    }
+
+    // 2. 수익률
+    const returnRateEl = document.getElementById('single-acc-return-rate') || document.getElementById('single-acc-pnl');
+    if (returnRateEl) {
+      returnRateEl.textContent = formatPercent(returnVal);
+      returnRateEl.className = `text-xs font-bold num-tabular truncate block ${pnlClass}`;
+    }
   }
 }
 
@@ -658,13 +672,13 @@ function renderHoldings() {
         </p>
       </div>
 
-      <div class="pt-2.5 border-t border-slate-700/60 flex justify-between items-center text-xs">
+      <div class="pt-2.5 border-t border-slate-700/60 flex justify-between items-center text-sm">
         <div>
-          <span class="text-[10px] text-slate-400 block">평가금액</span>
+          <span class="text-[12px] text-slate-400 block">평가금액</span>
           <span class="font-extrabold text-white num-tabular text-sm">${formatWon(h.valuation_amount)}</span>
         </div>
         <div class="text-right">
-          <span class="text-[10px] text-slate-400 block">평가손익 (수익률)</span>
+          <span class="text-[12px] text-slate-400 block">평가손익 (수익률)</span>
           <span class="font-extrabold num-tabular text-sm ${pnlClass}">
             ${pnlNum > 0 ? '+' : ''}${formatWon(pnlNum)} (${formatPercent(returnNum)})
           </span>
