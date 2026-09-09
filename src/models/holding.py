@@ -11,10 +11,9 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.models.base import Base
+from src.models.base import Base, StringUUID
 
 if TYPE_CHECKING:
     from src.models.etf_master import ETFMaster
@@ -30,18 +29,18 @@ class Holding(Base):
     )
 
     holding_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        StringUUID,
         primary_key=True,
         default=uuid.uuid4,
     )
     user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        StringUUID,
         ForeignKey("user.user_id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
     group_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        StringUUID,
         ForeignKey("portfolio_group.group_id", ondelete="CASCADE"),
         nullable=False,
         index=True,
