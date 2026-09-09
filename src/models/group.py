@@ -2,10 +2,9 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 from sqlalchemy import DateTime, ForeignKey, Integer, String, func
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.models.base import Base
+from src.models.base import Base, StringUUID
 
 if TYPE_CHECKING:
     from src.models.holding import Holding
@@ -16,12 +15,12 @@ class PortfolioGroup(Base):
     __tablename__ = "portfolio_group"
 
     group_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        StringUUID,
         primary_key=True,
         default=uuid.uuid4,
     )
     user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        StringUUID,
         ForeignKey("user.user_id", ondelete="CASCADE"),
         nullable=False,
         index=True,
