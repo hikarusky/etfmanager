@@ -53,7 +53,7 @@ async def create_group(
 
 @router.get("/{group_id}", response_model=GroupResponse)
 async def get_group(
-    group_id: uuid.UUID,
+    group_id: str,
     user_id: uuid.UUID = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
@@ -61,8 +61,8 @@ async def get_group(
     try:
         group = await group_service.get_group(db, user_id=user_id, group_id=group_id)
         return GroupResponse(
-            group_id=group.group_id,
-            user_id=group.user_id,
+            group_id=str(group.group_id),
+            user_id=str(group.user_id),
             name=group.name,
             account_type=group.account_type,
             color=group.color,
@@ -77,7 +77,7 @@ async def get_group(
 @router.patch("/{group_id}", response_model=GroupResponse)
 @router.put("/{group_id}", response_model=GroupResponse)
 async def update_group(
-    group_id: uuid.UUID,
+    group_id: str,
     data: GroupUpdateRequest,
     user_id: uuid.UUID = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
@@ -88,8 +88,8 @@ async def update_group(
             db, user_id=user_id, group_id=group_id, data=data
         )
         return GroupResponse(
-            group_id=group.group_id,
-            user_id=group.user_id,
+            group_id=str(group.group_id),
+            user_id=str(group.user_id),
             name=group.name,
             account_type=group.account_type,
             color=group.color,
@@ -105,11 +105,11 @@ async def update_group(
 
 @router.delete("/{group_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_group(
-    group_id: uuid.UUID,
+    group_id: str,
     delete_holdings: bool = Query(False, description="보유 종목 함께 삭제 여부"),
-    target_group_id: uuid.UUID | None = Query(None, description="보유 종목을 이관할 대상 그룹 ID"),
+    target_group_id: str | None = Query(None, description="보유 종목을 이관할 대상 그룹 ID"),
     force_delete_holdings: bool = Query(False, description="하위 호환용 파라미터"),
-    transfer_to_group_id: uuid.UUID | None = Query(None, description="하위 호환용 파라미터"),
+    transfer_to_group_id: str | None = Query(None, description="하위 호환용 파라미터"),
     user_id: uuid.UUID = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
