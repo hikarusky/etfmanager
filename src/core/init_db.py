@@ -74,6 +74,7 @@ async def init_tables_and_seeds() -> None:
 
             for group_data in DEFAULT_GROUPS:
                 group = PortfolioGroup(
+                    group_id=group_data["group_id"],
                     user_id=default_user.user_id,
                     name=group_data["name"],
                     account_type=group_data["account_type"],
