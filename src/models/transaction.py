@@ -3,10 +3,9 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
 from sqlalchemy import Date, DateTime, ForeignKey, Integer, Numeric, String, func
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.models.base import Base
+from src.models.base import Base, StringUUID
 
 if TYPE_CHECKING:
     from src.models.holding import Holding
@@ -16,12 +15,12 @@ class Transaction(Base):
     __tablename__ = "transaction"
 
     tx_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        StringUUID,
         primary_key=True,
         default=uuid.uuid4,
     )
     holding_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        StringUUID,
         ForeignKey("holding.holding_id", ondelete="CASCADE"),
         nullable=False,
         index=True,
