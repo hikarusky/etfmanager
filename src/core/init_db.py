@@ -8,11 +8,11 @@ from src.core.database import AsyncSessionLocal, engine
 from src.models import Base, PortfolioGroup, User
 
 DEFAULT_GROUPS = [
-    {"name": "연금저축", "account_type": "연금저축", "color": "#4A90E2", "sort_order": 1},
-    {"name": "IRP", "account_type": "IRP", "color": "#50E3C2", "sort_order": 2},
-    {"name": "DC", "account_type": "DC", "color": "#F5A623", "sort_order": 3},
-    {"name": "ISA", "account_type": "ISA", "color": "#9013FE", "sort_order": 4},
-    {"name": "일반위탁", "account_type": "일반", "color": "#7ED321", "sort_order": 5},
+    {"group_id": "grp_pension", "name": "연금저축", "account_type": "연금저축", "color": "#4A90E2", "sort_order": 1},
+    {"group_id": "grp_irp", "name": "IRP", "account_type": "IRP", "color": "#50E3C2", "sort_order": 2},
+    {"group_id": "grp_dc", "name": "DC", "account_type": "DC", "color": "#F5A623", "sort_order": 3},
+    {"group_id": "grp_isa", "name": "ISA", "account_type": "ISA", "color": "#9013FE", "sort_order": 4},
+    {"group_id": "grp_general", "name": "일반위탁", "account_type": "일반", "color": "#7ED321", "sort_order": 5},
 ]
 
 
