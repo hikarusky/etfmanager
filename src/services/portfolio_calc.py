@@ -102,15 +102,15 @@ def calculate_portfolio_totals(holdings_metrics: list[dict]) -> dict:
 def get_pnl_color(amount: Decimal | float | int) -> str:
     """
     Korean standard color conventions:
-    Profit (+): Red (#E12343)
-    Loss (-): Blue (#1763B6)
+    Profit (+): Red (#D0374C)
+    Loss (-): Blue (#60A5FA)
     Neutral (0): Gray (#666666)
     """
     val = Decimal(str(amount))
     if val > 0:
-        return "#E12343"
+        return "#D0374C"
     elif val < 0:
-        return "#1763B6"
+        return "#60A5FA"
     return "#666666"
 
 
