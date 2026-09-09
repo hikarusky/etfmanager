@@ -37,8 +37,8 @@ function formatPercent(val) {
 
 function getPnlColor(val) {
   const num = typeof val === 'string' ? parseFloat(val) : val;
-  if (num > 0) return '#E12343'; // Korean Red
-  if (num < 0) return '#1763B6'; // Korean Blue
+  if (num > 0) return '#D0374C'; // Toned-down Soft Red
+  if (num < 0) return '#60A5FA'; // Bright Vivid Blue for Loss
   return '#94A3B8'; // Neutral Gray
 }
 
@@ -1307,7 +1307,7 @@ async function saveEditGroup() {
       saveBtn.disabled = false;
       saveBtn.textContent = '수정 저장';
     }
-  }
+}
 }
 
 // Group Management Modal
