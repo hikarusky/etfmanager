@@ -30,11 +30,15 @@ async def get_current_user_id(
 ) -> str:
     """
     Get current user ID from X-User-Id header or default to primary user ('hikarusky').
-    Ensures user record exists in PostgreSQL 'etf_portfolio' DB.
+    Never auto-creates random new UUID users on normal/default sessions.
     """
     target_id = resolve_user_uuid(x_user_id)
 
-    # Ensure user exists in database
+    # If primary user ('hikarusky'), return directly without DB writes
+    if target_id == DEFAULT_USER_ID:
+        return DEFAULT_USER_ID
+
+    # Only ensure record exists if an explicit non-default user ID was requested (e.g. tests)
     result = await db.execute(select(User).where(User.user_id == target_id))
     user = result.scalars().first()
     if not user:
