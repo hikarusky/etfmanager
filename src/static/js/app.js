@@ -27,6 +27,14 @@ function formatWon(val) {
   return `₩ ${formatNumber(val)}`;
 }
 
+function formatPnlWon(val) {
+  if (val === null || val === undefined) return '₩ 0';
+  const num = typeof val === 'string' ? parseFloat(val) : val;
+  if (isNaN(num) || num === 0) return '₩ 0';
+  const sign = num > 0 ? '+' : '-';
+  return `₩${sign}${formatNumber(Math.abs(num))}`;
+}
+
 function formatPercent(val) {
   if (val === null || val === undefined) return '0.00%';
   const num = typeof val === 'string' ? parseFloat(val) : val;
@@ -425,8 +433,7 @@ function renderSummaryCard() {
   const pnlNum = parseFloat(summary.total_pnl);
   const returnRateNum = parseFloat(summary.total_return_rate);
 
-  const sign = pnlNum > 0 ? '+' : '';
-  pnlEl.textContent = `${sign}₩ ${formatNumber(pnlNum)}`;
+  pnlEl.textContent = formatPnlWon(pnlNum);
   pnlEl.className = `text-sm font-bold num-tabular ${getPnlClass(pnlNum)}`;
 
   badgeEl.textContent = formatPercent(returnRateNum);
@@ -551,9 +558,7 @@ function renderAllocationOrAccountCard() {
     // 1. 수익금 (평가손익)
     const pnlAmountEl = document.getElementById('single-acc-pnl-amount');
     if (pnlAmountEl) {
-      const sign = pnlVal > 0 ? '+' : (pnlVal < 0 ? '-' : '');
-      const formattedAmount = pnlVal !== 0 ? `${sign}₩ ${formatNumber(Math.abs(pnlVal))}` : '₩ 0';
-      pnlAmountEl.textContent = formattedAmount;
+      pnlAmountEl.textContent = formatPnlWon(pnlVal);
       pnlAmountEl.className = `text-xs font-bold num-tabular truncate block ${pnlClass}`;
     }
 
@@ -644,6 +649,7 @@ function renderHoldings() {
     card.setAttribute('draggable', 'true');
     card.dataset.holdingId = h.holding_id;
 
+    // 계좌선택후 보여지는 보유종목 카드형 관련 코드 시작
     card.innerHTML = `
       <div class="flex justify-between items-start mb-2">
         <div class="flex items-center gap-1.5">
@@ -674,17 +680,18 @@ function renderHoldings() {
 
       <div class="pt-2.5 border-t border-slate-700/60 flex justify-between items-center text-sm">
         <div>
-          <span class="text-[12px] text-slate-400 block">평가금액</span>
-          <span class="font-extrabold text-white num-tabular text-sm">${formatWon(h.valuation_amount)}</span>
+          <span class="text-xs font-bold text-slate-100 block mb-0.5">평가금액</span>
+          <span class="font-black text-white num-tabular text-base tracking-tight">${formatWon(h.valuation_amount)}</span>
         </div>
         <div class="text-right">
-          <span class="text-[12px] text-slate-400 block">평가손익 (수익률)</span>
-          <span class="font-extrabold num-tabular text-sm ${pnlClass}">
-            ${pnlNum > 0 ? '+' : ''}${formatWon(pnlNum)} (${formatPercent(returnNum)})
+          <span class="text-xs font-bold text-slate-100 block mb-0.5">평가손익 (수익률)</span>
+          <span class="font-black num-tabular text-base tracking-tight ${pnlClass}">
+            ${formatPnlWon(pnlNum)} (${formatPercent(returnNum)})
           </span>
         </div>
       </div>
     `;
+    // 계좌선택후 보여지는 보유종목 카드형 관련 코드 끝
 
     // Click handler to open detail modal
     card.onclick = (e) => {
@@ -829,7 +836,7 @@ async function openHoldingDetail(holding) {
   const returnNum = parseFloat(holding.return_rate || 0);
   const pnlEl = document.getElementById('detail-pnl');
   const returnEl = document.getElementById('detail-return-rate');
-  pnlEl.textContent = `${pnlNum > 0 ? '+' : ''}${formatWon(pnlNum)}`;
+  pnlEl.textContent = formatPnlWon(pnlNum);
   pnlEl.className = `text-base font-bold num-tabular ${getPnlClass(pnlNum)}`;
   returnEl.textContent = `(${formatPercent(returnNum)})`;
   returnEl.className = `text-xs font-bold num-tabular ml-1 ${getPnlClass(pnlNum)}`;
