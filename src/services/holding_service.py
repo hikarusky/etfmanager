@@ -1,7 +1,7 @@
 import uuid
 from datetime import date
 from decimal import Decimal
-from sqlalchemy import desc, select
+from sqlalchemy import desc, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -67,8 +67,9 @@ class HoldingService:
             if data.memo is not None:
                 existing_holding.memo = data.memo
 
+            target_id = existing_holding.holding_id
             tx = Transaction(
-                holding_id=existing_holding.holding_id,
+                holding_id=target_id,
                 tx_type="BUY",
                 price=data.price,
                 quantity=data.quantity,
@@ -76,8 +77,15 @@ class HoldingService:
             )
             session.add(tx)
             await session.commit()
-            return await self.get_holding(session, user_id, existing_holding.holding_id)
+            return await self.get_holding(session, user_id, target_id)
         else:
+            # Query current max sort_order in target group
+            max_order_stmt = select(func.coalesce(func.max(Holding.sort_order), -1)).where(
+                Holding.user_id == user_id,
+                Holding.group_id == data.group_id,
+            )
+            max_order = (await session.execute(max_order_stmt)).scalar() or 0
+
             # New holding
             holding = Holding(
                 user_id=user_id,
@@ -85,13 +93,15 @@ class HoldingService:
                 ticker=ticker_clean,
                 avg_price=Decimal(str(data.price)),
                 quantity=data.quantity,
+                sort_order=max_order + 1,
                 memo=data.memo,
             )
             session.add(holding)
             await session.flush()
 
+            target_id = holding.holding_id
             tx = Transaction(
-                holding_id=holding.holding_id,
+                holding_id=target_id,
                 tx_type="BUY",
                 price=data.price,
                 quantity=data.quantity,
@@ -99,7 +109,7 @@ class HoldingService:
             )
             session.add(tx)
             await session.commit()
-            return await self.get_holding(session, user_id, holding.holding_id)
+            return await self.get_holding(session, user_id, target_id)
 
     async def get_holding(
         self, session: AsyncSession, user_id: uuid.UUID, holding_id: uuid.UUID
@@ -112,6 +122,7 @@ class HoldingService:
                 selectinload(Holding.etf),
                 selectinload(Holding.transactions),
             )
+            .execution_options(populate_existing=True)
         )
         holding = (await session.execute(stmt)).scalars().first()
         if not holding:
@@ -131,6 +142,8 @@ class HoldingService:
             holding.avg_price = data.avg_price
         if data.quantity is not None:
             holding.quantity = data.quantity
+        if data.sort_order is not None:
+            holding.sort_order = data.sort_order
         if data.memo is not None:
             holding.memo = data.memo
         if data.group_id is not None and data.group_id != holding.group_id:
@@ -144,8 +157,27 @@ class HoldingService:
                 raise EntityNotFoundException(f"Target group '{data.group_id}' not found.")
             holding.group_id = data.group_id
 
+        target_id = holding.holding_id
         await session.commit()
-        return await self.get_holding(session, user_id, holding.holding_id)
+        return await self.get_holding(session, user_id, target_id)
+
+    async def reorder_holdings(
+        self,
+        session: AsyncSession,
+        user_id: uuid.UUID,
+        holding_ids: list[str],
+        group_id: str | None = None,
+    ) -> int:
+        """Update display sort_order for user holdings according to the provided list order."""
+        for idx, hid in enumerate(holding_ids):
+            stmt = (
+                update(Holding)
+                .where(Holding.holding_id == hid, Holding.user_id == user_id)
+                .values(sort_order=idx)
+            )
+            await session.execute(stmt)
+        await session.commit()
+        return len(holding_ids)
 
     async def delete_holding(
         self, session: AsyncSession, user_id: uuid.UUID, holding_id: uuid.UUID
@@ -187,6 +219,7 @@ class HoldingService:
             "issuer": holding.etf.issuer if holding.etf else None,
             "avg_price": holding.avg_price,
             "quantity": holding.quantity,
+            "sort_order": holding.sort_order,
             "memo": holding.memo,
             "close_price": close_price,
             "invested_amount": metrics["invested_amount"],
