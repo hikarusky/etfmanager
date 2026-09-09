@@ -83,38 +83,65 @@ function showToast(message, type = 'info', customClass = '') {
   }, 2500);
 }
 
+// Default user ID with user's registered portfolio (5 groups, 64 holdings)
+const DEFAULT_PRIMARY_USER_ID = 'hikarusky';
+
 // API Base URL & Client Device Identity Management
 function getUserId() {
   const STORAGE_KEY = 'etf_portfolio_user_id';
   let uid = localStorage.getItem(STORAGE_KEY);
-  if (!uid) {
-    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-      uid = crypto.randomUUID();
-    } else {
-      uid = '00000000-0000-0000-0000-000000000001';
-    }
+  if (!uid || uid === 'undefined' || uid === 'null' || uid === '88ba0ed8-3940-4f81-b21b-31b1984d0f12') {
+    uid = DEFAULT_PRIMARY_USER_ID;
     localStorage.setItem(STORAGE_KEY, uid);
   }
   return uid;
+}
+
+function setUserId(newId) {
+  const STORAGE_KEY = 'etf_portfolio_user_id';
+  if (!newId) return;
+  localStorage.setItem(STORAGE_KEY, newId.trim());
+  updateUserHeaderDisplay();
+}
+
+function updateUserHeaderDisplay() {
+  const uid = getUserId();
+  const badge = document.getElementById('header-user-short-id');
+  if (badge) {
+    if (uid === DEFAULT_PRIMARY_USER_ID) {
+      badge.textContent = '내 계정';
+      badge.className = 'font-mono text-[11px] text-emerald-400 font-semibold';
+    } else {
+      badge.textContent = uid.substring(0, 6) + '..';
+      badge.className = 'font-mono text-[11px] text-blue-400 font-medium';
+    }
+  }
+  const barInput = document.getElementById('bar-user-id-input');
+  if (barInput && !barInput.matches(':focus')) {
+    barInput.value = uid;
+  }
 }
 
 let activeApiBase = window.API_BASE_URL || localStorage.getItem('ETF_API_BASE') || '';
 
 function getInitialApiBase() {
   if (activeApiBase) return activeApiBase;
-  // If loaded via file:// protocol or common static dev server ports (5500, 3000, 5173, etc.)
-  if (window.location.protocol === 'file:' || ['5500', '3000', '5173', '8080'].includes(window.location.port)) {
-    return 'http://localhost:8000';
+  if (typeof window !== 'undefined' && window.location && window.location.origin && window.location.origin.startsWith('http')) {
+    return '';
   }
-  return '';
+  return 'http://localhost:8010';
 }
 
 activeApiBase = getInitialApiBase();
 
 async function detectWorkingApiBase() {
+  const currentOrigin = (typeof window !== 'undefined' && window.location && window.location.origin) ? window.location.origin : '';
   const candidates = [
-    activeApiBase,
     '',
+    currentOrigin,
+    activeApiBase,
+    'http://localhost:8010',
+    'http://127.0.0.1:8010',
     'http://localhost:8000',
     'http://127.0.0.1:8000',
     'http://localhost:8001',
@@ -125,7 +152,7 @@ async function detectWorkingApiBase() {
   for (const base of uniqueCandidates) {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 1200);
+      const timeoutId = setTimeout(() => controller.abort(), 1500);
       const res = await fetch(`${base}/health`, {
         signal: controller.signal,
         headers: { 'Accept': 'application/json' }
@@ -1427,15 +1454,38 @@ async function executeDeleteGroup(groupId, transferToGroupId = null, forceDelete
 
 // Event Listeners Setup
 function setupEventListeners() {
+  const bindClick = (id, fn) => {
+    const el = document.getElementById(id);
+    if (el) el.onclick = fn;
+  };
+
+  // User ID Direct Input Bar Events
+  bindClick('btn-bar-apply-user', () => {
+    const barInput = document.getElementById('bar-user-id-input');
+    if (barInput) handleApplyCustomUserId(barInput.value);
+  });
+
+  bindClick('btn-bar-open-user-modal', openUserSettingsModal);
+
+  const barInputEl = document.getElementById('bar-user-id-input');
+  if (barInputEl) {
+    barInputEl.onkeydown = (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleApplyCustomUserId(barInputEl.value);
+      }
+    };
+  }
+
   // Top Navigation Actions
-  document.getElementById('btn-sync-market').onclick = syncMarketPrices;
-  document.getElementById('btn-open-groups').onclick = openGroupsModal;
-  document.getElementById('btn-close-groups').onclick = closeGroupsModal;
+  bindClick('btn-sync-market', syncMarketPrices);
+  bindClick('btn-open-groups', openGroupsModal);
+  bindClick('btn-close-groups', closeGroupsModal);
 
   // Floating Action Button & Empty state add button
-  document.getElementById('btn-open-buy').onclick = () => openBuyModal();
-  document.getElementById('btn-empty-add').onclick = () => openBuyModal();
-  document.getElementById('btn-quick-add-group').onclick = openGroupsModal;
+  bindClick('btn-open-buy', () => openBuyModal());
+  bindClick('btn-empty-add', () => openBuyModal());
+  bindClick('btn-quick-add-group', openGroupsModal);
 
   // Sort Selector
   const sortSelector = document.getElementById('sort-selector');
@@ -1477,64 +1527,74 @@ function setupEventListeners() {
   }
 
   // Search & Buy Modal Events
-  document.getElementById('btn-close-buy-modal').onclick = closeBuyModal;
-  document.getElementById('btn-back-to-search').onclick = () => showBuyStep('search');
-  document.getElementById('btn-submit-buy').onclick = submitBuyHolding;
+  bindClick('btn-close-buy-modal', closeBuyModal);
+  bindClick('btn-back-to-search', () => showBuyStep('search'));
+  bindClick('btn-submit-buy', submitBuyHolding);
 
   // Debounced Search Input
   const searchInput = document.getElementById('etf-search-input');
-  searchInput.oninput = (e) => {
-    clearTimeout(searchDebounceTimer);
-    searchDebounceTimer = setTimeout(() => {
-      searchETFs(e.target.value);
-    }, 200);
-  };
+  if (searchInput) {
+    searchInput.oninput = (e) => {
+      clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = setTimeout(() => {
+        searchETFs(e.target.value);
+      }, 200);
+    };
+  }
 
-  document.getElementById('btn-clear-search').onclick = () => {
-    searchInput.value = '';
-    searchETFs('');
-    searchInput.focus();
-  };
+  bindClick('btn-clear-search', () => {
+    if (searchInput) {
+      searchInput.value = '';
+      searchETFs('');
+      searchInput.focus();
+    }
+  });
 
   // Quick Chosung Chips
   document.querySelectorAll('.quick-chip').forEach((chip) => {
     chip.onclick = () => {
       const q = chip.dataset.query;
-      searchInput.value = q;
+      if (searchInput) searchInput.value = q;
       searchETFs(q);
     };
   });
 
   // Price & Qty Form input events
   const priceInput = document.getElementById('input-buy-price');
-  priceInput.oninput = (e) => {
-    const raw = e.target.value.replace(/[^0-9]/g, '');
-    e.target.value = raw ? parseInt(raw).toLocaleString('ko-KR') : '';
-    updateBuyFormCalculations();
-  };
+  if (priceInput) {
+    priceInput.oninput = (e) => {
+      const raw = e.target.value.replace(/[^0-9]/g, '');
+      e.target.value = raw ? parseInt(raw).toLocaleString('ko-KR') : '';
+      updateBuyFormCalculations();
+    };
+  }
 
   const qtyInput = document.getElementById('input-buy-qty');
-  qtyInput.oninput = updateBuyFormCalculations;
+  if (qtyInput) {
+    qtyInput.oninput = updateBuyFormCalculations;
+  }
 
   document.querySelectorAll('.btn-qty-add').forEach((btn) => {
     btn.onclick = () => {
       const add = parseInt(btn.dataset.add);
-      const cur = parseInt(qtyInput.value) || 0;
-      qtyInput.value = cur + add;
-      updateBuyFormCalculations();
+      const cur = parseInt(qtyInput ? qtyInput.value : 0) || 0;
+      if (qtyInput) {
+        qtyInput.value = cur + add;
+        updateBuyFormCalculations();
+      }
     };
   });
 
-  document.getElementById('btn-use-market-price').onclick = () => {
-    if (state.selectedETF) {
+  bindClick('btn-use-market-price', () => {
+    if (state.selectedETF && priceInput) {
       priceInput.value = formatNumber(state.selectedETF.close_price);
       updateBuyFormCalculations();
     }
-  };
+  });
 
   // Holding Detail Sheet Events
-  document.getElementById('btn-close-detail').onclick = closeHoldingDetail;
-  document.getElementById('btn-detail-add-more').onclick = () => {
+  bindClick('btn-close-detail', closeHoldingDetail);
+  bindClick('btn-detail-add-more', () => {
     if (state.selectedHolding) {
       const etfStub = {
         ticker: state.selectedHolding.ticker,
@@ -1546,80 +1606,223 @@ function setupEventListeners() {
       closeHoldingDetail();
       openBuyModal(etfStub, grpId);
     }
-  };
-  document.getElementById('btn-detail-edit').onclick = openEditHoldingModal;
-  document.getElementById('btn-detail-delete').onclick = () => {
+  });
+  bindClick('btn-detail-edit', openEditHoldingModal);
+  bindClick('btn-detail-delete', () => {
     if (state.selectedHolding) {
       deleteHolding(state.selectedHolding.holding_id);
     }
-  };
+  });
 
   // Holding Direct Edit Modal Events
-  document.getElementById('btn-close-edit-holding').onclick = closeEditHoldingModal;
-  document.getElementById('btn-cancel-edit-holding').onclick = closeEditHoldingModal;
-  document.getElementById('btn-save-edit-holding').onclick = saveEditHolding;
+  bindClick('btn-close-edit-holding', closeEditHoldingModal);
+  bindClick('btn-cancel-edit-holding', closeEditHoldingModal);
+  bindClick('btn-save-edit-holding', saveEditHolding);
 
   // Group Direct Edit Modal Events
-  const btnEditActiveGroup = document.getElementById('btn-edit-active-group');
-  if (btnEditActiveGroup) {
-    btnEditActiveGroup.onclick = () => {
-      if (state.activeGroupId) {
-        const grp = state.groups.find((g) => g.group_id === state.activeGroupId);
-        if (grp) openEditGroupModal(grp);
-      }
+  bindClick('btn-edit-active-group', () => {
+    if (state.activeGroupId) {
+      const grp = state.groups.find((g) => g.group_id === state.activeGroupId);
+      if (grp) openEditGroupModal(grp);
+    }
+  });
+
+  bindClick('btn-close-edit-group', closeEditGroupModal);
+  bindClick('btn-cancel-edit-group', closeEditGroupModal);
+  bindClick('btn-save-edit-group', saveEditGroup);
+
+  const editColorInput = document.getElementById('edit-group-color');
+  if (editColorInput) {
+    editColorInput.oninput = (e) => {
+      const c = e.target.value.toUpperCase();
+      const hexEl = document.getElementById('edit-group-color-hex');
+      const dotEl = document.getElementById('edit-group-color-dot');
+      if (hexEl) hexEl.textContent = c;
+      if (dotEl) dotEl.style.backgroundColor = c;
     };
   }
-
-  document.getElementById('btn-close-edit-group').onclick = closeEditGroupModal;
-  document.getElementById('btn-cancel-edit-group').onclick = closeEditGroupModal;
-  document.getElementById('btn-save-edit-group').onclick = saveEditGroup;
-
-  document.getElementById('edit-group-color').oninput = (e) => {
-    const c = e.target.value.toUpperCase();
-    document.getElementById('edit-group-color-hex').textContent = c;
-    document.getElementById('edit-group-color-dot').style.backgroundColor = c;
-  };
 
   document.querySelectorAll('#edit-group-palette button').forEach((btn) => {
     btn.onclick = () => {
       const c = btn.dataset.color;
-      document.getElementById('edit-group-color').value = c;
-      document.getElementById('edit-group-color-hex').textContent = c.toUpperCase();
-      document.getElementById('edit-group-color-dot').style.backgroundColor = c;
+      const colInput = document.getElementById('edit-group-color');
+      const hexEl = document.getElementById('edit-group-color-hex');
+      const dotEl = document.getElementById('edit-group-color-dot');
+      if (colInput) colInput.value = c;
+      if (hexEl) hexEl.textContent = c.toUpperCase();
+      if (dotEl) dotEl.style.backgroundColor = c;
     };
   });
 
   // Group Create & Delete Guard Events
-  document.getElementById('btn-create-group').onclick = createNewGroup;
-  document.getElementById('new-group-color').oninput = (e) => {
-    document.getElementById('color-hex-preview').textContent = e.target.value.toUpperCase();
-  };
+  bindClick('btn-create-group', createNewGroup);
+  const newGroupCol = document.getElementById('new-group-color');
+  if (newGroupCol) {
+    newGroupCol.oninput = (e) => {
+      const prev = document.getElementById('color-hex-preview');
+      if (prev) prev.textContent = e.target.value.toUpperCase();
+    };
+  }
 
-  document.getElementById('btn-cancel-group-delete').onclick = () => {
-    document.getElementById('modal-group-delete-guard').classList.add('hidden');
+  bindClick('btn-cancel-group-delete', () => {
+    const guard = document.getElementById('modal-group-delete-guard');
+    if (guard) guard.classList.add('hidden');
     state.deletePendingGroupId = null;
-  };
+  });
 
-  document.getElementById('btn-confirm-transfer-delete').onclick = () => {
-    const targetGroupId = document.getElementById('transfer-target-group-select').value;
+  bindClick('btn-confirm-transfer-delete', () => {
+    const sel = document.getElementById('transfer-target-group-select');
+    const targetGroupId = sel ? sel.value : null;
     if (state.deletePendingGroupId) {
       executeDeleteGroup(state.deletePendingGroupId, targetGroupId, false);
     }
-  };
+  });
 
-  document.getElementById('btn-confirm-force-delete').onclick = () => {
+  bindClick('btn-confirm-force-delete', () => {
     if (confirm('정말로 이 계좌의 모든 보유 종목과 거래 기록을 영구 삭제하시겠습니까?')) {
       if (state.deletePendingGroupId) {
         executeDeleteGroup(state.deletePendingGroupId, null, true);
       }
     }
-  };
+  });
+
+  // User Settings Modal Logic
+  async function openUserSettingsModal() {
+    const modal = document.getElementById('modal-user-settings');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+
+    const currentId = getUserId();
+    const displayInput = document.getElementById('active-user-id-display');
+    const statusBadge = document.getElementById('active-user-status-badge');
+    const customInput = document.getElementById('input-custom-user-id');
+    const userSelect = document.getElementById('select-registered-users');
+
+    if (displayInput) displayInput.value = currentId;
+    if (customInput) customInput.value = currentId;
+
+    // Fetch current user status
+    try {
+      const meRes = await apiFetch('/api/v1/users/me');
+      if (statusBadge) {
+        statusBadge.textContent = `${meRes.group_count}계좌 / ${meRes.holding_count}종목 보유`;
+        if (meRes.holding_count > 0) {
+          statusBadge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800/60 font-medium';
+        } else {
+          statusBadge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-amber-950 text-amber-300 border border-amber-800/60 font-medium';
+        }
+      }
+    } catch (err) {
+      if (statusBadge) statusBadge.textContent = '조회 실패';
+    }
+
+    // Populate registered users dropdown
+    try {
+      const users = await apiFetch('/api/v1/users');
+      if (userSelect && Array.isArray(users)) {
+        userSelect.innerHTML = users.map(u => {
+          const isCurrent = (u.user_id === currentId);
+          const isDef = (u.user_id === DEFAULT_PRIMARY_USER_ID);
+          const tag = isDef ? ' ★[내 원래 등록계좌]' : '';
+          const currentTag = isCurrent ? ' (현재 활성)' : '';
+          const dataTag = u.holding_count > 0 ? ` - ${u.group_count}계좌/${u.holding_count}종목` : ' - 빈 계정';
+          return `<option value="${u.user_id}" ${isCurrent ? 'selected' : ''}>${u.user_id.substring(0, 8)}...${dataTag}${tag}${currentTag}</option>`;
+        }).join('');
+      }
+    } catch (err) {
+      console.error('Failed to load users list', err);
+    }
+  }
+
+  function closeUserSettingsModal() {
+    const modal = document.getElementById('modal-user-settings');
+    if (modal) modal.classList.add('hidden');
+  }
+
+  async function handleApplyCustomUserId(inputVal) {
+    if (!inputVal || !inputVal.trim()) {
+      showToast('User ID를 입력해주세요.', 'warning');
+      return;
+    }
+    try {
+      const res = await apiFetch('/api/v1/users/resolve', {
+        method: 'POST',
+        body: { input_id: inputVal.trim() }
+      });
+      const resolvedId = res.resolved_user_id;
+      setUserId(resolvedId);
+      closeUserSettingsModal();
+      showToast(`User ID 적용 완료 (${res.group_count}계좌, ${res.holding_count}종목)`, 'success');
+      await loadDashboard();
+    } catch (err) {
+      showToast(`User ID 적용 실패: ${err.message}`, 'error');
+    }
+  }
+
+  // User Settings Events
+  const btnOpenUser = document.getElementById('btn-open-user-settings');
+  if (btnOpenUser) btnOpenUser.onclick = openUserSettingsModal;
+
+  const btnCloseUser = document.getElementById('btn-close-user-modal');
+  if (btnCloseUser) btnCloseUser.onclick = closeUserSettingsModal;
+
+  const btnDoneUser = document.getElementById('btn-done-user-modal');
+  if (btnDoneUser) btnDoneUser.onclick = closeUserSettingsModal;
+
+  const btnCopyUser = document.getElementById('btn-copy-user-id');
+  if (btnCopyUser) {
+    btnCopyUser.onclick = () => {
+      const val = document.getElementById('active-user-id-display').value;
+      if (navigator.clipboard && val) {
+        navigator.clipboard.writeText(val).then(() => {
+          showToast('User ID가 복사되었습니다', 'success');
+        }).catch(() => {
+          showToast(val, 'info');
+        });
+      } else {
+        showToast(val, 'info');
+      }
+    };
+  }
+
+  const btnRestorePrimary = document.getElementById('btn-restore-primary-user');
+  if (btnRestorePrimary) {
+    btnRestorePrimary.onclick = () => handleApplyCustomUserId(DEFAULT_PRIMARY_USER_ID);
+  }
+
+  const btnApplyCustom = document.getElementById('btn-apply-custom-user-id');
+  if (btnApplyCustom) {
+    btnApplyCustom.onclick = () => {
+      const val = document.getElementById('input-custom-user-id').value;
+      handleApplyCustomUserId(val);
+    };
+  }
+
+  const inputCustom = document.getElementById('input-custom-user-id');
+  if (inputCustom) {
+    inputCustom.onkeydown = (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleApplyCustomUserId(inputCustom.value);
+      }
+    };
+  }
+
+  const btnSwitchSelect = document.getElementById('btn-switch-selected-user');
+  if (btnSwitchSelect) {
+    btnSwitchSelect.onclick = () => {
+      const val = document.getElementById('select-registered-users').value;
+      handleApplyCustomUserId(val);
+    };
+  }
 
   // Close modals on background click (handling nested modals correctly)
   window.onclick = (e) => {
     if (!e.target.classList.contains('modal-backdrop')) return;
 
-    if (e.target.id === 'modal-edit-group') {
+    if (e.target.id === 'modal-user-settings') {
+      closeUserSettingsModal();
+    } else if (e.target.id === 'modal-edit-group') {
       closeEditGroupModal();
     } else if (e.target.id === 'modal-group-delete-guard') {
       document.getElementById('modal-group-delete-guard').classList.add('hidden');
@@ -1632,6 +1835,7 @@ function setupEventListeners() {
     } else if (e.target.id === 'modal-buy') {
       closeBuyModal();
     } else {
+      closeUserSettingsModal();
       closeBuyModal();
       closeHoldingDetail();
       closeEditHoldingModal();
@@ -1657,7 +1861,7 @@ if ('serviceWorker' in navigator) {
 if ('caches' in window) {
   caches.keys().then((keys) => {
     keys.forEach((key) => {
-      if (key !== 'etf-portfolio-cache-v12') {
+      if (key !== 'etf-portfolio-cache-v14') {
         caches.delete(key);
       }
     });
@@ -1666,6 +1870,7 @@ if ('caches' in window) {
 
 // App Initialization
 document.addEventListener('DOMContentLoaded', () => {
+  updateUserHeaderDisplay();
   setupEventListeners();
   loadDashboard();
 });
