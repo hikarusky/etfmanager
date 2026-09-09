@@ -65,6 +65,11 @@
         </div>
         
         <div class="flex items-center gap-1">
+          <!-- User Account Settings button -->
+          <button id="btn-open-user-settings" class="px-2 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors touch-active flex items-center gap-1.5 text-xs bg-slate-800/80 border border-slate-700/80" title="사용자 계정/ID 설정">
+            <i data-lucide="user" class="w-4 h-4 text-blue-400"></i>
+            <span id="header-user-short-id" class="font-mono text-[11px] text-slate-300 font-medium">사용자</span>
+          </button>
           <!-- Refresh button -->
           <button id="btn-sync-market" class="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors touch-active disabled:opacity-50" title="시세 새로고침">
             <span id="sync-icon-wrapper" class="inline-flex items-center justify-center">
@@ -79,14 +84,31 @@
       </header>
 
       <!-- Main Content Scroll Area -->
-      <main class="flex-1 px-4 pt-4 space-y-4">
+      <main class="flex-1 px-4 pt-3 space-y-4">
         
+        <!-- User ID Direct Input / Switcher Bar -->
+        <div id="user-identity-bar" class="bg-slate-800/70 border border-slate-700/70 rounded-xl p-2.5 flex items-center justify-between gap-2 shadow-md">
+          <div class="flex items-center gap-1.5 min-w-0 flex-1">
+            <i data-lucide="user" class="w-4 h-4 text-blue-400 flex-shrink-0"></i>
+            <span class="text-xs font-semibold text-slate-300 whitespace-nowrap">User ID:</span>
+            <input type="text" id="bar-user-id-input" placeholder="User ID 입력..." class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white font-mono placeholder-slate-500 focus:outline-none focus:border-blue-500">
+          </div>
+          <div class="flex items-center gap-1.5 flex-shrink-0">
+            <button id="btn-bar-apply-user" class="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold transition-colors shadow-sm">
+              조회
+            </button>
+            <button id="btn-bar-open-user-modal" class="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-700/50 transition-colors" title="계정 관리">
+              <i data-lucide="settings-2" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
         <!-- Total Valuation Card -->
         <section class="bg-gradient-to-b from-slate-800/90 to-slate-800/40 border border-slate-700/60 rounded-2xl p-5 shadow-lg relative overflow-hidden">
           <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl pointer-events-none"></div>
           
           <div class="flex justify-between items-start mb-1">
-            <span class="text-xs font-medium text-slate-400">총 평가금액</span>
+            <span class="text-sm font-medium text-slate-200">총 평가금액</span>
             <span id="card-as-of-badge" class="text-[11px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">종가 확정</span>
           </div>
           
@@ -160,18 +182,22 @@
               </button>
             </div>
           </div>
-          <div class="grid grid-cols-3 gap-2 pt-2 border-t border-slate-800 text-center">
+          <div class="grid grid-cols-4 gap-1.5 pt-2 border-t border-slate-800 text-center">
             <div>
-              <span class="text-[10px] text-slate-400 block">평가금액</span>
-              <span id="single-acc-valuation" class="text-xs font-bold text-white num-tabular">₩ 0</span>
+              <span class="text-[10px] text-slate-400 block mb-0.5 whitespace-nowrap">평가금액</span>
+              <span id="single-acc-valuation" class="text-xs font-bold text-white num-tabular truncate block">₩ 0</span>
             </div>
             <div>
-              <span class="text-[10px] text-slate-400 block">투자원금</span>
-              <span id="single-acc-invested" class="text-xs font-medium text-slate-300 num-tabular">₩ 0</span>
+              <span class="text-[10px] text-slate-400 block mb-0.5 whitespace-nowrap">투자원금</span>
+              <span id="single-acc-invested" class="text-xs font-medium text-slate-300 num-tabular truncate block">₩ 0</span>
             </div>
             <div>
-              <span class="text-[10px] text-slate-400 block">수익률</span>
-              <span id="single-acc-pnl" class="text-xs font-bold num-tabular text-slate-400">0.00%</span>
+              <span class="text-[10px] text-slate-400 block mb-0.5 whitespace-nowrap">수익금</span>
+              <span id="single-acc-pnl-amount" class="text-xs font-bold num-tabular truncate block text-slate-400">₩ 0</span>
+            </div>
+            <div>
+              <span class="text-[10px] text-slate-400 block mb-0.5 whitespace-nowrap">수익률</span>
+              <span id="single-acc-return-rate" class="text-xs font-bold num-tabular truncate block text-slate-400">0.00%</span>
             </div>
           </div>
         </section>
@@ -731,12 +757,94 @@
     </div>
   </div>
 
+  <!-- 6. User Account (User ID) Settings Modal -->
+  <div id="modal-user-settings" class="fixed inset-0 z-50 modal-backdrop flex items-center justify-center hidden p-4">
+    <div class="w-full max-w-[400px] bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-5 space-y-4 animate-fade-in max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-blue-600/20 text-blue-400 flex items-center justify-center">
+            <i data-lucide="user" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white">사용자 계정 (User ID) 설정</h3>
+            <p class="text-[11px] text-slate-400">데이터베이스의 user_id를 기준으로 포트폴리오를 조회합니다</p>
+          </div>
+        </div>
+        <button id="btn-close-user-modal" class="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Current Active User Info Card -->
+      <div class="p-3.5 rounded-xl bg-slate-800/80 border border-slate-700/80 space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-semibold text-slate-400">현재 활성화된 User ID</span>
+          <span id="active-user-status-badge" class="text-[10px] px-2 py-0.5 rounded-full bg-blue-950 text-blue-300 border border-blue-800/60 font-medium">조회중...</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="text" id="active-user-id-display" readonly class="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-xs font-mono text-emerald-400 select-all cursor-text focus:outline-none">
+          <button id="btn-copy-user-id" class="px-2.5 py-1.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-xs font-medium flex items-center gap-1 transition-colors flex-shrink-0" title="클립보드에 복사">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i> 복사
+          </button>
+        </div>
+      </div>
+
+      <!-- Primary Account Quick Restore Banner -->
+      <div class="p-3 rounded-xl bg-gradient-to-r from-blue-950/40 to-indigo-950/40 border border-blue-800/50 space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-blue-300 flex items-center gap-1.5">
+            <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i> 내 원래 등록 계좌 (기본)
+          </span>
+          <span class="text-[10px] text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded font-semibold">5계좌 / 64종목</span>
+        </div>
+        <p class="text-[11px] text-slate-400 leading-snug">
+          어제 등록된 포트폴리오(DC, 연금저축, ISA, IRP 등)로 즉시 전환 및 고정합니다.
+        </p>
+        <button id="btn-restore-primary-user" class="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg shadow-md shadow-blue-600/30 transition-colors flex items-center justify-center gap-1.5">
+          <i data-lucide="check" class="w-3.5 h-3.5"></i> 내 원래 계좌(5개)로 즉시 복원
+        </button>
+      </div>
+
+      <!-- Manual Input Section (사용자로부터 직접 입력) -->
+      <div class="space-y-2 pt-1 border-t border-slate-800">
+        <label class="text-xs font-semibold text-slate-300 block">User ID 직접 입력</label>
+        <p class="text-[11px] text-slate-400">UUID 또는 기억하기 쉬운 사용자명/아이디를 입력하세요.</p>
+        <div class="space-y-2">
+          <input type="text" id="input-custom-user-id" placeholder="예: hikarusky 또는 myetf" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 font-mono">
+          <button id="btn-apply-custom-user-id" class="w-full py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 text-white text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5">
+            <i data-lucide="log-in" class="w-3.5 h-3.5 text-blue-400"></i> 입력한 User ID로 전환 및 저장
+          </button>
+        </div>
+      </div>
+
+      <!-- Select From Registered Users in DB -->
+      <div class="space-y-2 pt-1 border-t border-slate-800">
+        <label class="text-xs font-semibold text-slate-300 block">DB 등록 계정에서 선택</label>
+        <div class="space-y-2">
+          <select id="select-registered-users" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500 font-mono">
+            <option value="">계정 목록 불러오는 중...</option>
+          </select>
+          <button id="btn-switch-selected-user" class="w-full py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 text-slate-200 text-xs font-semibold rounded-xl transition-colors">
+            선택한 사용자로 변경
+          </button>
+        </div>
+      </div>
+
+      <div class="pt-2">
+        <button id="btn-done-user-modal" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition-colors">
+          닫기
+        </button>
+      </div>
+    </div>
+  </div>
+
+
   <!-- Toast Notification Container (max-width reduced by 20% to 320px) -->
   <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 z-[100] w-full max-w-[320px] px-3 pointer-events-none space-y-2 flex flex-col items-center" style="z-index: 100;">
     <!-- Toasts dynamically appended by JS -->
   </div>
 
   <!-- Main Application Logic -->
-  <script src="/js/app.js?v=1.0.12"></script>
+  <script src="/js/app.js?v=1.0.14"></script>
 </body>
 </html>
