@@ -662,7 +662,7 @@ function renderHoldings() {
           <span class="text-xs font-mono text-slate-400 font-semibold">${h.ticker}</span>
         </div>
         <div class="flex items-center gap-1 text-right">
-          <span class="text-xs font-extrabold text-white num-tabular">${formatWon(h.close_price)}</span>
+          <span class="text-xs font-extrabold text-white num-tabular">현재가 : ${formatWon(h.close_price)}</span>
           <span class="text-[10px] font-bold num-tabular px-1 py-0.2 rounded ${changeClass} bg-slate-900/60">
             ${formatPercent(changeNum)}
           </span>
