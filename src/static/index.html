@@ -464,9 +464,10 @@
           <h3 id="detail-name" class="text-lg font-extrabold text-white mb-1">종목명</h3>
           <div class="flex items-baseline justify-between">
             <div class="flex items-baseline gap-1.5">
-              <span class="text-xs text-slate-400">현재가</span>
-              <span id="detail-current-price" class="text-xl font-extrabold num-tabular text-white">₩ 0</span>
+              <span class="text-sm text-slate-100">현재가</span>
+              <span id="detail-current-price" class="text-sm font-extrabold num-tabular text-white">₩ 0</span>
             </div>
+            <span class="text-sm text-slate-100">전일종가대비</span>
             <span id="detail-change-rate" class="text-xs font-bold num-tabular px-2 py-0.5 rounded bg-slate-800 text-slate-400">
               0.00%
             </span>
@@ -476,7 +477,7 @@
         <!-- Profit Summary Card -->
         <div class="bg-slate-800/60 border border-slate-700/80 rounded-2xl p-4 space-y-3">
           <div class="flex justify-between items-center">
-            <span class="text-xs text-slate-400">평가손익</span>
+            <span class="text-sm text-slate-100">평가손익</span>
             <div class="text-right">
               <span id="detail-pnl" class="text-base font-bold num-tabular text-slate-300">₩ 0</span>
               <span id="detail-return-rate" class="text-xs font-bold num-tabular ml-1 text-slate-400">(0.00%)</span>
@@ -484,19 +485,19 @@
           </div>
           <div class="grid grid-cols-2 gap-3 pt-3 border-t border-slate-700/60">
             <div>
-              <span class="text-[11px] text-slate-400 block">평가금액</span>
-              <span id="detail-valuation" class="text-sm font-bold text-white num-tabular">₩ 0</span>
+              <span class="text-[12px] text-slate-100 block">평가금액</span>
+              <span id="detail-valuation" class="text-sm font-medium text-white num-tabular">₩ 0</span>
             </div>
             <div>
-              <span class="text-[11px] text-slate-400 block">투자원금</span>
+              <span class="text-[12px] text-slate-100 block">투자원금</span>
               <span id="detail-invested" class="text-sm font-medium text-slate-300 num-tabular">₩ 0</span>
             </div>
             <div>
-              <span class="text-[11px] text-slate-400 block">보유수량</span>
+              <span class="text-[12px] text-slate-100 block">보유수량</span>
               <span id="detail-qty" class="text-sm font-bold text-white num-tabular">0주</span>
             </div>
             <div>
-              <span class="text-[11px] text-slate-400 block">매수 평단가</span>
+              <span class="text-[12px] text-slate-100 block">매수 평단가</span>
               <span id="detail-avg-price" class="text-sm font-bold text-white num-tabular">₩ 0</span>
             </div>
           </div>
@@ -505,15 +506,15 @@
         <!-- ETF Additional Spec -->
         <div class="bg-slate-800/30 border border-slate-800 rounded-xl p-3 text-xs space-y-2">
           <div class="flex justify-between">
-            <span class="text-slate-100">운용사</span>
+            <span class="text-[12px] text-slate-100">운용사</span>
             <span id="detail-issuer" class="font-medium text-slate-200">-</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-slate-100">순자산(AUM)</span>
+            <span class="text-[12px] text-slate-100">순자산(AUM)</span>
             <span id="detail-aum" class="font-medium text-slate-200">-</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-slate-100">총보수</span>
+            <span class="text-[12px] text-slate-100">총보수</span>
             <span id="detail-expense" class="font-medium text-slate-200">-</span>
           </div>
         </div>
