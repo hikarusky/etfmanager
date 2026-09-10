@@ -462,15 +462,17 @@
         <!-- Header Info -->
         <div>
           <h3 id="detail-name" class="text-lg font-extrabold text-white mb-1">종목명</h3>
-          <div class="flex items-baseline justify-between">
+          <div class="flex items-center justify-between">
             <div class="flex items-baseline gap-1.5">
               <span class="text-sm text-slate-100">현재가</span>
               <span id="detail-current-price" class="text-sm font-extrabold num-tabular text-white">₩ 0</span>
             </div>
-            <span class="text-sm text-slate-100">전일종가대비</span>
-            <span id="detail-change-rate" class="text-xs font-bold num-tabular px-2 py-0.5 rounded bg-slate-800 text-slate-400">
-              0.00%
-            </span>
+            <div class="flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-800">
+              <span class="text-xs text-slate-300">전일종가대비</span>
+              <span id="detail-change-rate" class="text-xs font-bold num-tabular text-slate-400">
+                0.00%
+              </span>
+            </div>
           </div>
         </div>
 
@@ -523,7 +525,7 @@
         <div class="space-y-2">
           <div class="flex justify-between items-center text-xs">
             <span class="font-bold text-slate-300">매수 거래 이력</span>
-            <span id="detail-tx-count" class="text-slate-500">0건</span>
+            <span id="detail-tx-count" class="text-slate-100">0건</span>
           </div>
           <div id="detail-tx-list" class="space-y-1.5 max-h-48 overflow-y-auto no-scrollbar">
             <!-- Transactions rendered by JS -->
