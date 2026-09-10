@@ -39,8 +39,10 @@ function formatPercent(val) {
   if (val === null || val === undefined) return '0.00%';
   const num = typeof val === 'string' ? parseFloat(val) : val;
   if (isNaN(num)) return '0.00%';
+  const fixed = num.toFixed(2);
+  if (fixed === '-0.00' || fixed === '0.00') return '0.00%';
   const sign = num > 0 ? '+' : '';
-  return `${sign}${num.toFixed(2)}%`;
+  return `${sign}${fixed}%`;
 }
 
 function getPnlColor(val) {
@@ -52,6 +54,9 @@ function getPnlColor(val) {
 
 function getPnlClass(val) {
   const num = typeof val === 'string' ? parseFloat(val) : val;
+  if (isNaN(num)) return 'text-slate-400';
+  const fixed = num.toFixed(2);
+  if (fixed === '0.00' || fixed === '-0.00') return 'text-slate-400';
   if (num > 0) return 'text-krx-red';
   if (num < 0) return 'text-krx-blue';
   return 'text-slate-400';
@@ -639,7 +644,7 @@ function renderHoldings() {
   holdings.forEach((h) => {
     const pnlNum = parseFloat(h.pnl || 0);
     const returnNum = parseFloat(h.return_rate || 0);
-    const changeNum = parseFloat(h.change_rate || 0);
+    const changeNum = parseFloat(h.change_rate || 0) * 100;
     const pnlClass = getPnlClass(pnlNum);
     const changeClass = getPnlClass(changeNum);
     const investedAmount = h.invested_amount != null ? h.invested_amount : (parseFloat(h.avg_price || 0) * parseInt(h.quantity || 0));
@@ -827,7 +832,7 @@ async function openHoldingDetail(holding) {
   document.getElementById('detail-name').textContent = holding.name_kr;
   document.getElementById('detail-current-price').textContent = formatWon(holding.close_price);
 
-  const changeNum = parseFloat(holding.change_rate || 0);
+  const changeNum = parseFloat(holding.change_rate || 0) * 100;
   const changeEl = document.getElementById('detail-change-rate');
   changeEl.textContent = formatPercent(changeNum);
   changeEl.className = `text-xs font-bold num-tabular px-2 py-0.5 rounded ${getPnlClass(changeNum)} bg-slate-800`;
@@ -967,7 +972,7 @@ async function searchETFs(query) {
       const item = document.createElement('div');
       item.className = 'p-3 rounded-xl bg-slate-800/70 hover:bg-slate-750 border border-slate-700/50 hover:border-slate-600 transition-all cursor-pointer flex justify-between items-center touch-active';
       
-      const changeNum = parseFloat(etf.change_rate || 0);
+      const changeNum = parseFloat(etf.change_rate || 0) * 100;
       const changeClass = getPnlClass(changeNum);
 
       item.innerHTML = `
