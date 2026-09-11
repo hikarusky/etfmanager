@@ -1,8 +1,9 @@
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 import logging
 import time
 from typing import Any
-from sqlalchemy import desc, select
+import httpx
+from sqlalchemy import desc, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models import ETFMaster, ETFPriceDaily
@@ -169,13 +170,87 @@ class SearchService:
     async def get_etf_detail(
         self, session: AsyncSession, ticker: str
     ) -> dict[str, Any] | None:
-        """Get single ETF details and preview data."""
+        """Get single ETF details and preview data. Lazily fills expense_ratio if missing."""
         await self._ensure_cache(session)
         target = str(ticker).zfill(6)
+        target_item = None
         for item in self._cached_etfs:
             if item["ticker"] == target:
-                return item
-        return None
+                target_item = item
+                break
+
+        if not target_item:
+            return None
+
+        # Lazy fill expense_ratio if missing
+        if target_item.get("expense_ratio") is None:
+            extra_info = await self._fetch_live_etf_extra_info(target)
+            if extra_info:
+                exp_ratio = extra_info.get("expense_ratio")
+                idx_name = extra_info.get("index_name")
+
+                update_vals: dict[str, Any] = {}
+                if exp_ratio is not None:
+                    target_item["expense_ratio"] = exp_ratio
+                    update_vals["expense_ratio"] = exp_ratio
+                if idx_name and not target_item.get("index_name"):
+                    target_item["index_name"] = idx_name
+                    update_vals["index_name"] = idx_name
+
+                if update_vals:
+                    try:
+                        stmt = (
+                            update(ETFMaster)
+                            .where(ETFMaster.ticker == target)
+                            .values(**update_vals)
+                        )
+                        await session.execute(stmt)
+                        await session.commit()
+                        logger.info(f"Updated live ETF info for {target}: {update_vals}")
+                    except Exception as e:
+                        logger.warning(f"Failed to persist extra info for {target}: {e}")
+                        await session.rollback()
+
+        return target_item
+
+    async def _fetch_live_etf_extra_info(self, ticker: str) -> dict[str, Any] | None:
+        """Fetch additional ETF info (fundPay -> expense_ratio, etfBaseIdx -> index_name) from Naver Mobile API."""
+        url = f"https://m.stock.naver.com/api/stock/{ticker}/integration"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+            "Referer": "https://m.stock.naver.com/",
+        }
+        try:
+            async with httpx.AsyncClient(timeout=4.0) as client:
+                res = await client.get(url, headers=headers)
+                if res.status_code != 200:
+                    return None
+                data = res.json()
+
+            total_infos = data.get("totalInfos", [])
+            info_map = {it.get("code"): it.get("value") for it in total_infos if isinstance(it, dict)}
+
+            res_dict: dict[str, Any] = {}
+            raw_fund_pay = info_map.get("fundPay")
+            if raw_fund_pay and "%" in str(raw_fund_pay):
+                try:
+                    pct_str = str(raw_fund_pay).replace("%", "").strip()
+                    pct_val = Decimal(pct_str)
+                    # Convert percent to ratio (e.g. 0.15% -> 0.001500)
+                    res_dict["expense_ratio"] = (pct_val / Decimal("100")).quantize(
+                        Decimal("0.000001"), rounding=ROUND_HALF_UP
+                    )
+                except Exception as ex:
+                    logger.warning(f"Error parsing fundPay '{raw_fund_pay}' for {ticker}: {ex}")
+
+            base_idx = info_map.get("etfBaseIdx")
+            if base_idx and str(base_idx).strip():
+                res_dict["index_name"] = str(base_idx).strip()
+
+            return res_dict if res_dict else None
+        except Exception as e:
+            logger.warning(f"Failed to fetch Naver mobile integration info for {ticker}: {e}")
+            return None
 
 
 search_service = SearchService()
