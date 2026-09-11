@@ -56,6 +56,7 @@ async def init_tables_and_seeds() -> None:
         await conn.run_sync(Base.metadata.create_all)
         from sqlalchemy import text
         await conn.execute(text("ALTER TABLE holding ADD COLUMN IF NOT EXISTS sort_order INT DEFAULT 0 NOT NULL;"))
+        await conn.execute(text("ALTER TABLE etf_master ALTER COLUMN expense_ratio TYPE NUMERIC(10, 6);"))
     print("Tables initialized successfully.")
 
     # Seed default user and groups if none exist
