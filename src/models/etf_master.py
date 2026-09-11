@@ -48,7 +48,7 @@ class ETFMaster(Base):
         doc="Underlying benchmark index name",
     )
     expense_ratio: Mapped[Decimal | None] = mapped_column(
-        Numeric(6, 4),
+        Numeric(10, 6),
         nullable=True,
         doc="Total annual expense ratio (%)",
     )
