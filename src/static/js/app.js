@@ -835,7 +835,7 @@ async function openHoldingDetail(holding) {
   const changeNum = parseFloat(holding.change_rate || 0) * 100;
   const changeEl = document.getElementById('detail-change-rate');
   changeEl.textContent = formatPercent(changeNum);
-  changeEl.className = `text-xs font-bold num-tabular px-2 py-0.5 rounded ${getPnlClass(changeNum)} bg-slate-800`;
+  changeEl.className = `text-xs font-bold num-tabular ${getPnlClass(changeNum)}`;
 
   const pnlNum = parseFloat(holding.pnl || 0);
   const returnNum = parseFloat(holding.return_rate || 0);
@@ -859,7 +859,13 @@ async function openHoldingDetail(holding) {
     const etfDetail = await apiFetch(`/api/v1/etfs/${holding.ticker}`);
     if (etfDetail) {
       document.getElementById('detail-aum').textContent = etfDetail.aum ? `₩ ${formatNumber(etfDetail.aum)}억` : '-';
-      document.getElementById('detail-expense').textContent = etfDetail.expense_ratio ? `${(parseFloat(etfDetail.expense_ratio) * 100).toFixed(2)}%` : '-';
+      if (etfDetail.expense_ratio != null) {
+        const expPct = parseFloat(etfDetail.expense_ratio) * 100;
+        const formattedExp = expPct < 0.01 ? `${expPct.toFixed(3)}%` : `${expPct.toFixed(2)}%`;
+        document.getElementById('detail-expense').textContent = formattedExp;
+      } else {
+        document.getElementById('detail-expense').textContent = '-';
+      }
     }
   } catch (e) {
     console.error(e);
