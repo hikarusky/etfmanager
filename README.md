@@ -73,3 +73,11 @@ uv run pytest tests/test_search.py
 # REST API 및 프론트엔드 서빙 검증
 uv run pytest tests/test_api.py tests/test_frontend_and_sync.py
 ```
+
+---
+
+## 📚 관련 개발 및 유지보수 가이드
+
+- **프론트엔드 유지보수 가이드**: [FRONTEND_MAINTENANCE_GUIDE.md](file:///Users/hongjunyong/Desktop/etf/FRONTEND_MAINTENANCE_GUIDE.md) (React 개발자를 위한 바닐라 JS 및 상태 관리 가이드)
+- **아키텍처 및 DB 격리 수칙**: [GEMINI.md](file:///Users/hongjunyong/Desktop/etf/GEMINI.md)
+- **제품 요구사항 정의서**: [ETF_관리앱_PRD.md](file:///Users/hongjunyong/Desktop/etf/ETF_관리앱_PRD.md)
