@@ -617,19 +617,27 @@ function renderAllocationOrAccountCard() {
           });
         }
 
+        const riskRatioEl = document.getElementById('single-acc-risk-ratio');
         const nonRiskRatioEl = document.getElementById('single-acc-non-risk-ratio');
 
-        let ratioVal = 0;
-        if (grp.non_risk_ratio != null) {
-          ratioVal = parseFloat(grp.non_risk_ratio || 0);
+        let rRatioVal = 0;
+        let nrRatioVal = 0;
+
+        if (grp.risk_ratio != null && grp.non_risk_ratio != null) {
+          rRatioVal = parseFloat(grp.risk_ratio || 0);
+          nrRatioVal = parseFloat(grp.non_risk_ratio || 0);
         } else {
           const totalAsset = riskVal + nonRiskVal;
-          ratioVal = totalAsset > 0 ? (nonRiskVal / totalAsset) * 100 : 0;
+          if (totalAsset > 0) {
+            rRatioVal = (riskVal / totalAsset) * 100;
+            nrRatioVal = (nonRiskVal / totalAsset) * 100;
+          }
         }
 
         if (riskAmountEl) riskAmountEl.textContent = formatNumber(Math.round(riskVal));
+        if (riskRatioEl) riskRatioEl.textContent = `(${rRatioVal.toFixed(2)}%)`;
         if (nonRiskAmountEl) nonRiskAmountEl.textContent = formatNumber(Math.round(nonRiskVal));
-        if (nonRiskRatioEl) nonRiskRatioEl.textContent = `(${ratioVal.toFixed(2)}%)`;
+        if (nonRiskRatioEl) nonRiskRatioEl.textContent = `(${nrRatioVal.toFixed(2)}%)`;
         riskBreakdownEl.classList.remove('hidden');
       } else {
         riskBreakdownEl.classList.add('hidden');

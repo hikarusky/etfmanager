@@ -170,6 +170,7 @@ class DashboardService:
             # Calculate Risk vs Non-Risk breakdown for retirement accounts (DC, IRP)
             risk_amt: Decimal | None = None
             non_risk_amt: Decimal | None = None
+            risk_ratio: Decimal | None = None
             non_risk_ratio: Decimal | None = None
             is_ret = (g.account_type and g.account_type.upper() in ("DC", "IRP")) or (
                 "DC" in g.name.upper() or "IRP" in g.name.upper()
@@ -192,10 +193,14 @@ class DashboardService:
                 non_risk_amt = nr_sum
                 total_grp = r_sum + nr_sum
                 if total_grp > 0:
+                    risk_ratio = (r_sum / total_grp * Decimal("100")).quantize(
+                        Decimal("0.01"), rounding=ROUND_HALF_UP
+                    )
                     non_risk_ratio = (nr_sum / total_grp * Decimal("100")).quantize(
                         Decimal("0.01"), rounding=ROUND_HALF_UP
                     )
                 else:
+                    risk_ratio = Decimal("0.00")
                     non_risk_ratio = Decimal("0.00")
 
             group_items.append(
@@ -213,6 +218,7 @@ class DashboardService:
                     color_code=g_totals["color_code"],
                     risk_amount=risk_amt,
                     non_risk_amount=non_risk_amt,
+                    risk_ratio=risk_ratio,
                     non_risk_ratio=non_risk_ratio,
                     holdings=g_holdings,
                 )
