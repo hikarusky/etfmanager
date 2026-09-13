@@ -29,6 +29,8 @@ class DashboardGroupItem(BaseModel):
     return_rate: Decimal = Decimal("0.00")
     weight_percent: Decimal = Decimal("0.00")
     color_code: str = "#666666"
+    risk_amount: Decimal | None = None
+    non_risk_amount: Decimal | None = None
     holdings: list[HoldingResponse] = []
 
 
