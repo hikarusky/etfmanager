@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from pydantic import BaseModel
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -35,12 +35,13 @@ class UserResolveResponse(BaseModel):
 
 @router.get("", response_model=list[UserItem])
 async def list_users(
+    include_empty: bool = Query(False, description="Whether to include empty accounts without groups and holdings"),
     current_user_id: uuid.UUID = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     """
     List all registered users with their account and holding counts.
-    Allows user to see and switch to any existing portfolio in the database.
+    By default, filters out empty test/temporary users without groups or holdings.
     """
     # Query users with count of groups and holdings
     users_stmt = select(User).order_by(User.created_at.desc())
@@ -57,6 +58,13 @@ async def list_users(
         h_cnt_stmt = select(func.count(Holding.holding_id)).where(Holding.user_id == u.user_id)
         h_cnt = (await db.execute(h_cnt_stmt)).scalar() or 0
 
+        is_default = (u.user_id == DEFAULT_USER_ID)
+        is_current = (u.user_id == current_user_id)
+
+        # Filter out empty temporary/test users unless requested or active/default
+        if not include_empty and not is_default and not is_current and g_cnt == 0 and h_cnt == 0:
+            continue
+
         items.append(
             UserItem(
                 user_id=str(u.user_id),
@@ -64,8 +72,8 @@ async def list_users(
                 created_at=u.created_at,
                 group_count=g_cnt,
                 holding_count=h_cnt,
-                is_default=(u.user_id == DEFAULT_USER_ID),
-                is_current=(u.user_id == current_user_id),
+                is_default=is_default,
+                is_current=is_current,
             )
         )
 
