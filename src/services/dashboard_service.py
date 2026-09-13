@@ -15,6 +15,7 @@ from src.schemas.holding import HoldingResponse
 from src.services.portfolio_calc import (
     calculate_holding_metrics,
     calculate_portfolio_totals,
+    format_holding_name,
     is_today_close_confirmed,
 )
 
@@ -92,14 +93,23 @@ class DashboardService:
             )
             all_metrics.append(metrics)
 
+            group_name = h.group.name if h.group else None
+            group_account_type = h.group.account_type if h.group else None
+            raw_name = h.etf.name_kr if h.etf else h.ticker
+            display_name = format_holding_name(
+                raw_name,
+                account_type=group_account_type,
+                group_name=group_name,
+            )
+
             resp_item = HoldingResponse(
                 holding_id=h.holding_id,
                 user_id=h.user_id,
                 group_id=h.group_id,
-                group_name=h.group.name if h.group else None,
+                group_name=group_name,
                 group_color=h.group.color if h.group else None,
                 ticker=h.ticker,
-                name_kr=h.etf.name_kr if h.etf else h.ticker,
+                name_kr=display_name,
                 issuer=h.etf.issuer if h.etf else None,
                 avg_price=h.avg_price,
                 quantity=h.quantity,
