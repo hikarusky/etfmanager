@@ -31,6 +31,7 @@ class DashboardGroupItem(BaseModel):
     color_code: str = "#666666"
     risk_amount: Decimal | None = None
     non_risk_amount: Decimal | None = None
+    non_risk_ratio: Decimal | None = None
     holdings: list[HoldingResponse] = []
 
 
