@@ -64,8 +64,9 @@ function getPnlClass(val) {
 
 function formatHoldingDisplayName(nameKr, groupName, accountType) {
   if (!nameKr) return '';
-  const isDc = (accountType && accountType.toUpperCase() === 'DC') || (groupName && groupName.toUpperCase().includes('DC'));
-  if (isDc) {
+  const isRetirement = (accountType && ['DC', 'IRP'].includes(accountType.toUpperCase())) ||
+                       (groupName && (groupName.toUpperCase().includes('DC') || groupName.toUpperCase().includes('IRP')));
+  if (isRetirement) {
     const upper = nameKr.toUpperCase();
     if ((upper.includes('TDF') || nameKr.includes('채권')) && !nameKr.includes('(NO위험자산)')) {
       return `${nameKr}(NO위험자산)`;
