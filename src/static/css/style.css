@@ -112,3 +112,17 @@ body {
   z-index: 100;
 }
 
+/* Risk Breakdown Banner - Strictly enforce single-line layout without line breaks */
+.risk-breakdown-banner {
+  white-space: nowrap !important;
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+}
+
+.risk-breakdown-banner * {
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+}
+
