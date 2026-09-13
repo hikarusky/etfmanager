@@ -167,6 +167,29 @@ class DashboardService:
             else:
                 weight = Decimal("0.00")
 
+            # Calculate Risk vs Non-Risk breakdown for retirement accounts (DC, IRP)
+            risk_amt: Decimal | None = None
+            non_risk_amt: Decimal | None = None
+            is_ret = (g.account_type and g.account_type.upper() in ("DC", "IRP")) or (
+                "DC" in g.name.upper() or "IRP" in g.name.upper()
+            )
+            if is_ret:
+                r_sum = Decimal("0")
+                nr_sum = Decimal("0")
+                for it in g_holdings:
+                    name = it.name_kr or ""
+                    is_non_risk = (
+                        "(NO위험자산)" in name
+                        or "TDF" in name.upper()
+                        or "채권" in name
+                    )
+                    if is_non_risk:
+                        nr_sum += it.valuation_amount
+                    else:
+                        r_sum += it.valuation_amount
+                risk_amt = r_sum
+                non_risk_amt = nr_sum
+
             group_items.append(
                 DashboardGroupItem(
                     group_id=g.group_id,
@@ -180,6 +203,8 @@ class DashboardService:
                     return_rate=g_totals["total_return_rate"],
                     weight_percent=weight,
                     color_code=g_totals["color_code"],
+                    risk_amount=risk_amt,
+                    non_risk_amount=non_risk_amt,
                     holdings=g_holdings,
                 )
             )
