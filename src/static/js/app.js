@@ -1757,8 +1757,13 @@ function setupEventListeners() {
           const isDef = (u.user_id === DEFAULT_PRIMARY_USER_ID);
           const tag = isDef ? ' ★[내 원래 등록계좌]' : '';
           const currentTag = isCurrent ? ' (현재 활성)' : '';
-          const dataTag = u.holding_count > 0 ? ` - ${u.group_count}계좌/${u.holding_count}종목` : ' - 빈 계정';
-          return `<option value="${u.user_id}" ${isCurrent ? 'selected' : ''}>${u.user_id.substring(0, 8)}...${dataTag}${tag}${currentTag}</option>`;
+          const dataTag = u.holding_count > 0 
+            ? ` - ${u.group_count}계좌/${u.holding_count}종목` 
+            : (u.group_count > 0 ? ` - ${u.group_count}계좌/0종목` : ' - 빈 계정');
+          const displayLabel = isDef 
+            ? `${DEFAULT_PRIMARY_USER_ID}${dataTag}${tag}${currentTag}`
+            : `${u.user_id.length > 12 ? u.user_id.substring(0, 8) + '...' : u.user_id}${dataTag}${tag}${currentTag}`;
+          return `<option value="${u.user_id}" ${isCurrent ? 'selected' : ''}>${displayLabel}</option>`;
         }).join('');
       }
     } catch (err) {
