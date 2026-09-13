@@ -62,6 +62,18 @@ function getPnlClass(val) {
   return 'text-slate-400';
 }
 
+function formatHoldingDisplayName(nameKr, groupName, accountType) {
+  if (!nameKr) return '';
+  const isDc = (accountType && accountType.toUpperCase() === 'DC') || (groupName && groupName.toUpperCase().includes('DC'));
+  if (isDc) {
+    const upper = nameKr.toUpperCase();
+    if ((upper.includes('TDF') || nameKr.includes('채권')) && !nameKr.includes('(NO위험자산)')) {
+      return `${nameKr}(NO위험자산)`;
+    }
+  }
+  return nameKr;
+}
+
 function showToast(message, type = 'info', customClass = '') {
   const container = document.getElementById('toast-container');
   const toast = document.createElement('div');
@@ -675,7 +687,7 @@ function renderHoldings() {
       </div>
 
       <div class="mb-3">
-        <h3 class="text-sm font-bold text-white tracking-tight leading-snug line-clamp-1">${h.name_kr}</h3>
+        <h3 class="text-sm font-bold text-white tracking-tight leading-snug line-clamp-1">${formatHoldingDisplayName(h.name_kr, h.group_name, h.account_type)}</h3>
         <p class="text-[13px] text-slate-300 num-tabular mt-1 leading-relaxed">
           <span class="whitespace-nowrap">보유 <strong class="text-white font-semibold">${formatNumber(h.quantity)}주</strong></span>
           <span class="whitespace-nowrap"> · 평단 <strong class="text-white font-semibold">${formatWon(h.avg_price)}</strong></span>
@@ -829,7 +841,7 @@ async function openHoldingDetail(holding) {
   document.getElementById('detail-group-badge').textContent = holding.group_name || '계좌';
   document.getElementById('detail-group-badge').style.backgroundColor = holding.group_color || '#3B82F6';
   document.getElementById('detail-ticker').textContent = holding.ticker;
-  document.getElementById('detail-name').textContent = holding.name_kr;
+  document.getElementById('detail-name').textContent = formatHoldingDisplayName(holding.name_kr, holding.group_name, holding.account_type);
   document.getElementById('detail-current-price').textContent = formatWon(holding.close_price);
 
   const changeNum = parseFloat(holding.change_rate || 0) * 100;
