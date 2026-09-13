@@ -586,6 +586,44 @@ function renderAllocationOrAccountCard() {
       returnRateEl.textContent = formatPercent(returnVal);
       returnRateEl.className = `text-xs font-bold num-tabular truncate block ${pnlClass}`;
     }
+
+    // 3. DC / IRP 계좌 위험자산 vs NO위험자산 합산 금액 표시
+    const riskBreakdownEl = document.getElementById('single-acc-risk-breakdown');
+    const riskAmountEl = document.getElementById('single-acc-risk-amount');
+    const nonRiskAmountEl = document.getElementById('single-acc-non-risk-amount');
+
+    const isRetirement = (grp.account_type && ['DC', 'IRP'].includes(grp.account_type.toUpperCase())) ||
+                         (grp.name && (grp.name.toUpperCase().includes('DC') || grp.name.toUpperCase().includes('IRP')));
+
+    if (riskBreakdownEl) {
+      if (isRetirement) {
+        let riskVal = 0;
+        let nonRiskVal = 0;
+
+        if (grp.risk_amount != null && grp.non_risk_amount != null) {
+          riskVal = parseFloat(grp.risk_amount || 0);
+          nonRiskVal = parseFloat(grp.non_risk_amount || 0);
+        } else {
+          (grp.holdings || []).forEach((h) => {
+            const v = parseFloat(h.valuation_amount || 0);
+            const name = h.name_kr || '';
+            const isNonRisk = name.includes('(NO위험자산)') || name.includes('NO위험자산') ||
+                              name.toUpperCase().includes('TDF') || name.includes('채권');
+            if (isNonRisk) {
+              nonRiskVal += v;
+            } else {
+              riskVal += v;
+            }
+          });
+        }
+
+        if (riskAmountEl) riskAmountEl.textContent = formatNumber(Math.round(riskVal));
+        if (nonRiskAmountEl) nonRiskAmountEl.textContent = formatNumber(Math.round(nonRiskVal));
+        riskBreakdownEl.classList.remove('hidden');
+      } else {
+        riskBreakdownEl.classList.add('hidden');
+      }
+    }
   }
 }
 
