@@ -11,6 +11,7 @@ from src.schemas.holding import HoldingCreateRequest, HoldingUpdateRequest
 from src.services.portfolio_calc import (
     calculate_holding_metrics,
     calculate_weighted_average_price,
+    format_holding_name,
 )
 
 
@@ -208,14 +209,23 @@ class HoldingService:
             close_price=close_price,
         )
 
+        group_name = holding.group.name if holding.group else None
+        group_account_type = holding.group.account_type if holding.group else None
+        raw_name = holding.etf.name_kr if holding.etf else holding.ticker
+        display_name = format_holding_name(
+            raw_name,
+            account_type=group_account_type,
+            group_name=group_name,
+        )
+
         return {
             "holding_id": holding.holding_id,
             "user_id": holding.user_id,
             "group_id": holding.group_id,
-            "group_name": holding.group.name if holding.group else None,
+            "group_name": group_name,
             "group_color": holding.group.color if holding.group else None,
             "ticker": holding.ticker,
-            "name_kr": holding.etf.name_kr if holding.etf else holding.ticker,
+            "name_kr": display_name,
             "issuer": holding.etf.issuer if holding.etf else None,
             "avg_price": holding.avg_price,
             "quantity": holding.quantity,
