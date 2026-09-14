@@ -1,21 +1,84 @@
 /**
- * KRX ETF Portfolio Management App - Client Engine
+ * ============================================================================
+ * KRX ETF Portfolio Management App - Client Engine (app.js)
+ * ============================================================================
+ * 
+ * [app.js 핵심 구조 & index.html 매핑 총괄 안내]
+ * ----------------------------------------------------------------------------
+ * 1. [전역 상태 & 유틸리티 / 포맷터]
+ *    - state: 앱 전체 데이터 상태 관리
+ *    - formatWon, formatPnlWon, formatPercent, getPnlClass: 금액 및 손익(+빨강/-파랑) 서식화
+ *    - formatHoldingDisplayName: DC/IRP 계좌 내 채권/TDF에 '(NO위험자산)' 자동 표기
+ *    - showToast: [적용: index.html #toast-container] 상단 알림 토스트 메시지 출력
+ * 
+ * 2. [사용자 ID & 백엔드 통신 계층]
+ *    - getUserId, setUserId, updateUserHeaderDisplay:
+ *      [적용: index.html #header-user-short-id, #bar-user-id-input] 상단 사용자 ID 갱신
+ *    - detectWorkingApiBase, apiFetch: FastAPI 백엔드 통신 및 포트 자동 감지
+ *    - showDashboardErrorBanner: [적용: index.html <main>] 서버 연결 오류 배너
+ * 
+ * 3. [데이터 조회 & 시세 동기화]
+ *    - loadDashboard: 백엔드 API에서 포트폴리오 데이터를 불러와 전체 화면 갱신
+ *    - syncMarketPrices: [적용: index.html #btn-sync-market, #sync-icon-wrapper] 시세 새로고침 회전 애니메이션
+ * 
+ * 4. [화면 렌더링 (UI Rendering) 엔진]
+ *    - renderHeader: [적용: index.html #header-base-date, #header-market-badge] 상단 기준일자 표시
+ *    - renderSummaryCard: [적용: index.html 메인 2 총 평가금액 카드 (#total-valuation, #total-invested, #total-pnl)]
+ *    - renderGroupTabs: [적용: index.html 메인 3 계좌 탭 바 (#group-tabs-container)]
+ *    - renderAllocationOrAccountCard:
+ *      - '전체' 탭: [적용: index.html 메인 4 자산 배분 비중 막대 (#allocation-section)]
+ *      - 개별 계좌 탭: [적용: index.html 메인 5 개별 계좌 요약 카드 (#single-account-section)]
+ *    - renderHoldings: [적용: index.html 메인 6 보유 종목 목록 (#holdings-list, #holdings-count-badge)]
+ *    - saveNewHoldingsOrder: 보유 종목 드래그 앤 드롭 순서 변경 결과 저장
+ * 
+ * 5. [모달 2: 보유 종목 상세 & 거래 내역]
+ *    - openHoldingDetail, closeHoldingDetail: [적용: index.html #modal-holding-detail]
+ * 
+ * 6. [모달 1: ETF 종목 검색 & 매수 등록 플로우]
+ *    - openBuyModal, closeBuyModal, showBuyStep: [적용: index.html #modal-buy]
+ *    - searchETFs: [적용: index.html #etf-search-input, #search-results-list] 실시간 초성/코드 검색
+ *    - selectETFForBuy: 2단계 매수 입력 폼으로 전환 (#buy-step-form)
+ *    - updateBuyFormCalculations, submitBuyHolding: [적용: index.html #form-total-calc, #btn-submit-buy]
+ * 
+ * 7. [모달 3: 보유 종목 정보 직접 수정]
+ *    - openEditHoldingModal, saveEditHolding: [적용: index.html #modal-edit-holding] (평단가, 수량, 메모)
+ *    - deleteHolding: [적용: index.html #btn-detail-delete] 종목 삭제
+ * 
+ * 8. [모달 4 & 4.5 & 5: 계좌 그룹 관리 및 삭제]
+ *    - openGroupsModal, renderGroupsList: [적용: index.html #modal-groups] 계좌 목록
+ *    - openEditGroupModal, saveEditGroup: [적용: index.html #modal-edit-group] 계좌명/색상 수정
+ *    - createNewGroup: [적용: index.html #btn-create-group] 새 계좌 생성
+ *    - handleDeleteGroupClick, executeDeleteGroup: [적용: index.html #modal-group-delete-guard] 안전 삭제 다이얼로그
+ * 
+ * 9. [모달 6 & 이벤트 바인딩: 사용자 계정 설정]
+ *    - openUserSettingsModal, handleApplyCustomUserId: [적용: index.html #modal-user-settings]
+ *    - setupEventListeners: 화면 내 모든 클릭/입력 이벤트 리스너 통합 연결
+ * ============================================================================
  */
 
-// Global Application State
+// ============================================================================
+// [섹션 1] 전역 애플리케이션 상태 (Global Application State)
+// ============================================================================
 const state = {
-  dashboard: null,
-  groups: [],
-  activeGroupId: null, // null means "전체"
-  currentSort: localStorage.getItem('etf_sort_preference') || 'custom',
-  selectedHolding: null,
-  selectedETF: null,
-  editingGroup: null,
-  isSyncing: false,
-  deletePendingGroupId: null,
+  dashboard: null,              // 백엔드 /api/v1/dashboard 에서 수신한 전체 대시보드 데이터
+  groups: [],                   // 사용자 계좌 그룹 목록 (연금저축, IRP, ISA 등)
+  activeGroupId: null,          // 현재 선택된 계좌 ID (null 이면 '전체' 포트폴리오 보기)
+  currentSort: localStorage.getItem('etf_sort_preference') || 'custom', // 종목 정렬 기준
+  selectedHolding: null,        // 상세 모달에서 열람 중인 보유 종목 정보
+  selectedETF: null,            // 매수 등록 모달에서 선택된 ETF 마스터 정보
+  editingGroup: null,           // 수정 중인 계좌 그룹 객체
+  isSyncing: false,             // 현재 시세 새로고침 진행 여부 플래그
+  deletePendingGroupId: null,   // 삭제 진행 대기 중인 계좌 ID
 };
 
-// Utilities & Formatters
+// ============================================================================
+// [섹션 2] 유틸리티 및 포맷터 함수 (Utilities & Formatters)
+// 화면의 숫자, 통화 단위(₩), 손익 색상, 퍼센트(%) 표시를 전담하는 공통 함수들
+// ============================================================================
+
+/**
+ * 숫자를 한국식 세자리 콤마 문자열로 변환 (예: 1234567 -> "1,234,567")
+ */
 function formatNumber(val) {
   if (val === null || val === undefined) return '0';
   const num = typeof val === 'string' ? parseFloat(val) : val;
@@ -23,10 +86,18 @@ function formatNumber(val) {
   return Math.round(num).toLocaleString('ko-KR');
 }
 
+/**
+ * 금액 앞에 '₩ ' 기호를 붙여 변환 (예: 50000 -> "₩ 50,000")
+ * [적용: index.html 내 평가금액, 투자원금, 현재가 표시부]
+ */
 function formatWon(val) {
   return `₩ ${formatNumber(val)}`;
 }
 
+/**
+ * 평가손익 금액을 부호(+/-)와 함께 변환 (예: 15000 -> "₩+15,000", -8000 -> "₩-8,000")
+ * [적용: index.html #total-pnl, #single-acc-pnl-amount, #detail-pnl 등]
+ */
 function formatPnlWon(val) {
   if (val === null || val === undefined) return '₩ 0';
   const num = typeof val === 'string' ? parseFloat(val) : val;
@@ -35,6 +106,10 @@ function formatPnlWon(val) {
   return `₩${sign}${formatNumber(Math.abs(num))}`;
 }
 
+/**
+ * 소수점 2자리 백분율(%) 문자열로 변환 (예: 5.234 -> "+5.23%", -1.2 -> "-1.20%")
+ * [적용: index.html #total-return-badge, 등락률, 수익률 표시부]
+ */
 function formatPercent(val) {
   if (val === null || val === undefined) return '0.00%';
   const num = typeof val === 'string' ? parseFloat(val) : val;
@@ -45,13 +120,20 @@ function formatPercent(val) {
   return `${sign}${fixed}%`;
 }
 
+/**
+ * 손익에 따른 HEX 컬러 코드 반환 (수익: 빨강 #D0374C / 손실: 파랑 #60A5FA / 보합: 회색 #94A3B8)
+ */
 function getPnlColor(val) {
   const num = typeof val === 'string' ? parseFloat(val) : val;
-  if (num > 0) return '#D0374C'; // Toned-down Soft Red
-  if (num < 0) return '#60A5FA'; // Bright Vivid Blue for Loss
-  return '#94A3B8'; // Neutral Gray
+  if (num > 0) return '#D0374C'; // KRX 상승/수익 빨간색
+  if (num < 0) return '#60A5FA'; // KRX 하락/손실 파란색
+  return '#94A3B8'; // 보합 회색
 }
 
+/**
+ * 손익에 따른 Tailwind CSS 텍스트 컬러 클래스 반환
+ * [적용: index.html 내 수익률 및 평가손익 텍스트 컬러]
+ */
 function getPnlClass(val) {
   const num = typeof val === 'string' ? parseFloat(val) : val;
   if (isNaN(num)) return 'text-slate-400';
@@ -62,6 +144,10 @@ function getPnlClass(val) {
   return 'text-slate-400';
 }
 
+/**
+ * DC / IRP 퇴직연금 계좌에서 안전자산(TDF, 채권혼합 등)에 '(NO위험자산)' 라벨을 붙여 반환
+ * [적용: index.html 보유 종목 카드 제목 및 상세 모달 종목명]
+ */
 function formatHoldingDisplayName(nameKr, groupName, accountType) {
   if (!nameKr) return '';
   const isRetirement = (accountType && ['DC', 'IRP'].includes(accountType.toUpperCase())) ||
@@ -75,6 +161,12 @@ function formatHoldingDisplayName(nameKr, groupName, accountType) {
   return nameKr;
 }
 
+/**
+ * 화면 상단 중앙에 일시적인 토스트 알림 메시지 띄우기
+ * [적용 대상 HTML ID: index.html #toast-container]
+ * @param {string} message - 표시할 안내 문구
+ * @param {'info'|'success'|'error'|'warning'} type - 알림 종류
+ */
 function showToast(message, type = 'info', customClass = '') {
   const container = document.getElementById('toast-container');
   const toast = document.createElement('div');
@@ -103,16 +195,23 @@ function showToast(message, type = 'info', customClass = '') {
   container.appendChild(toast);
   if (window.lucide) lucide.createIcons();
   
+  // 2.5초 후 위로 서서히 사라지며 삭제
   setTimeout(() => {
     toast.classList.add('opacity-0', 'translate-y-2');
     setTimeout(() => toast.remove(), 300);
   }, 2500);
 }
 
-// Default user ID with user's registered portfolio (5 groups, 64 holdings)
+// ============================================================================
+// [섹션 3] 사용자 계정(User ID) 식별 및 백엔드 API 연결 계층
+// ============================================================================
+
+// 기본 계정 ID 상수 (5개 계좌, 64개 보유 종목이 등록된 기본 계정)
 const DEFAULT_PRIMARY_USER_ID = 'hikarusky';
 
-// API Base URL & Client Device Identity Management
+/**
+ * 브라우저 로컬스토리지에 저장된 현재 활성 User ID 가져오기
+ */
 function getUserId() {
   const STORAGE_KEY = 'etf_portfolio_user_id';
   let uid = localStorage.getItem(STORAGE_KEY);
@@ -123,6 +222,9 @@ function getUserId() {
   return uid;
 }
 
+/**
+ * 새로운 User ID로 변경하고 로컬스토리지 저장 및 화면 UI 반영
+ */
 function setUserId(newId) {
   const STORAGE_KEY = 'etf_portfolio_user_id';
   if (!newId) return;
@@ -130,6 +232,10 @@ function setUserId(newId) {
   updateUserHeaderDisplay();
 }
 
+/**
+ * 상단 헤더 및 빠른 입력 바의 User ID 텍스트 갱신
+ * [적용 대상 HTML ID: index.html #header-user-short-id, #bar-user-id-input]
+ */
 function updateUserHeaderDisplay() {
   const uid = getUserId();
   const badge = document.getElementById('header-user-short-id');
@@ -148,6 +254,7 @@ function updateUserHeaderDisplay() {
   }
 }
 
+// 백엔드 API 서버 기본 주소
 let activeApiBase = window.API_BASE_URL || localStorage.getItem('ETF_API_BASE') || '';
 
 function getInitialApiBase() {
@@ -160,6 +267,9 @@ function getInitialApiBase() {
 
 activeApiBase = getInitialApiBase();
 
+/**
+ * 백엔드 서버 포트(8010, 8000 등) 자동 감지 및 연결 검증
+ */
 async function detectWorkingApiBase() {
   const currentOrigin = (typeof window !== 'undefined' && window.location && window.location.origin) ? window.location.origin : '';
   const candidates = [
@@ -187,7 +297,7 @@ async function detectWorkingApiBase() {
 
       if (res.ok) {
         const data = await res.json();
-        // Verify it is indeed our ETF Portfolio API service
+        // ETF 포트폴리오 전용 DB 연결 확인
         if (data.database === 'etf_portfolio' || data.app?.includes('ETF')) {
           activeApiBase = base;
           localStorage.setItem('ETF_API_BASE', base);
@@ -196,12 +306,15 @@ async function detectWorkingApiBase() {
         }
       }
     } catch (e) {
-      // Continue probe next candidate
+      // 다음 포트 후보로 계속 시도
     }
   }
   return null;
 }
 
+/**
+ * 백엔드 API 비동기 호출 공통 래퍼 함수 (헤더에 X-User-Id 자동 동봉)
+ */
 async function apiFetch(endpoint, options = {}) {
   const userId = getUserId();
   const headers = {
@@ -222,7 +335,7 @@ async function apiFetch(endpoint, options = {}) {
   try {
     res = await doFetch(activeApiBase);
   } catch (err) {
-    // Network error or connection refused - attempt automatic fallback detection
+    // 네트워크 실패 시 백엔드 포트 자동 재탐색
     const detected = await detectWorkingApiBase();
     if (detected !== null && detected !== activeApiBase) {
       res = await doFetch(detected);
@@ -231,7 +344,7 @@ async function apiFetch(endpoint, options = {}) {
     }
   }
 
-  // Handle port conflict or 404 (specifically when dashboard endpoint fails to find data)
+  // 404 발생 시 포트 변경 여부 재확인
   if (res.status === 404 && endpoint.includes('/dashboard')) {
     const detected = await detectWorkingApiBase();
     if (detected !== null && detected !== activeApiBase) {
@@ -250,7 +363,6 @@ async function apiFetch(endpoint, options = {}) {
     throw new Error(errorDetail);
   }
 
-  // Handle 204 No Content or empty responses
   if (res.status === 204 || res.headers.get('content-length') === '0') {
     return null;
   }
@@ -263,6 +375,10 @@ async function apiFetch(endpoint, options = {}) {
   return null;
 }
 
+/**
+ * 대시보드 데이터 로드 실패 시 메인 화면 최상단에 재시도 에러 배너 노출
+ * [적용 대상 HTML 위치: index.html <main> 태그 최상단]
+ */
 function showDashboardErrorBanner(errorMessage) {
   let errorBanner = document.getElementById('dashboard-error-banner');
   const main = document.querySelector('main');
@@ -284,8 +400,8 @@ function showDashboardErrorBanner(errorMessage) {
         <h3 class="text-sm font-bold text-red-100">대시보드 데이터를 불러오지 못했습니다</h3>
         <p class="text-xs text-red-300 mt-1 leading-relaxed break-words">${errorMessage}</p>
         <p class="text-[11px] text-slate-400 mt-1.5 leading-normal">
-          • 다른 프로세스가 8000번 포트를 사용 중이거나 백엔드가 꺼져있을 수 있습니다.<br>
-          • 터미널에서 <code class="text-amber-300 bg-slate-900 px-1 py-0.5 rounded">uv run uvicorn src.main:app --port 8000</code> 실행 여부를 확인하세요.
+          • 다른 프로세스가 포트를 사용 중이거나 백엔드가 꺼져있을 수 있습니다.<br>
+          • 터미널에서 <code class="text-amber-300 bg-slate-900 px-1 py-0.5 rounded">uv run uvicorn src.main:app</code> 실행 여부를 확인하세요.
         </p>
       </div>
     </div>
@@ -309,7 +425,13 @@ function removeDashboardErrorBanner() {
   if (banner) banner.remove();
 }
 
-// Data Fetching & Sync
+// ============================================================================
+// [섹션 4] 데이터 조회 및 시세 동기화 (Data Fetching & Sync)
+// ============================================================================
+
+/**
+ * 백엔드 /api/v1/dashboard 로부터 최신 포트폴리오 데이터를 불러와 전체 화면 갱신
+ */
 async function loadDashboard(isRetry = false) {
   const baseDateEl = document.getElementById('header-base-date');
   if (baseDateEl && !state.dashboard) {
@@ -333,6 +455,10 @@ async function loadDashboard(isRetry = false) {
   }
 }
 
+/**
+ * 상단 시세 동기화 버튼 회전 애니메이션 시작
+ * [적용 대상 HTML ID: index.html #btn-sync-market, #sync-icon-wrapper]
+ */
 function startSyncAnimation() {
   state.isSyncing = true;
   const syncBtn = document.getElementById('btn-sync-market');
@@ -344,6 +470,10 @@ function startSyncAnimation() {
   }
 }
 
+/**
+ * 상단 시세 동기화 버튼 회전 애니메이션 완전 정지 및 아이콘 복구
+ * [적용 대상 HTML ID: index.html #btn-sync-market, #sync-icon-wrapper]
+ */
 function stopSyncAnimation() {
   state.isSyncing = false;
   const syncBtn = document.getElementById('btn-sync-market');
@@ -355,18 +485,16 @@ function stopSyncAnimation() {
   }
 
   if (syncWrapper) {
-    // 1. animate-spin 클래스 및 인라인 애니메이션 제거
     syncWrapper.classList.remove('animate-spin');
     syncWrapper.style.animation = 'none';
 
-    // 2. 내부 요소의 모든 animate-spin 클래스 안전하게 제거
     syncWrapper.querySelectorAll('*').forEach((el) => {
       if (el && el.classList && typeof el.classList.remove === 'function') {
         el.classList.remove('animate-spin');
       }
     });
 
-    // 3. 아이콘 마크업을 초기 태그로 리셋하고 Lucide로 깨끗하게 재렌더링하여 회전 상태 완전 초기화
+    // 아이콘 마크업 재설정 및 회전 상태 초기화
     syncWrapper.innerHTML = '<i data-lucide="refresh-cw" class="w-5 h-5"></i>';
     if (window.lucide && typeof window.lucide.createIcons === 'function') {
       window.lucide.createIcons();
@@ -374,6 +502,10 @@ function stopSyncAnimation() {
   }
 }
 
+/**
+ * [새로고침 버튼 동작] KRX 최신 시세를 수집·갱신하고 대시보드를 새로고침
+ * [적용 대상 HTML ID: index.html #btn-sync-market 클릭 시 호출]
+ */
 async function syncMarketPrices() {
   if (state.isSyncing) return;
   startSyncAnimation();
@@ -391,11 +523,10 @@ async function syncMarketPrices() {
     console.error('syncMarketPrices failed:', err);
     showToast(err.message || '시세 동기화 중 오류가 발생했습니다.', 'error');
   } finally {
-    // 시세 동기화가 완료되면 즉시 회전 애니메이션 완전 정지
     stopSyncAnimation();
   }
 
-  // 동기화 완료 및 화살표 정지 후 대시보드 데이터 최신화
+  // 동기화 완료 후 대시보드 화면 최신화
   try {
     await loadDashboard();
   } catch (err) {
@@ -403,7 +534,14 @@ async function syncMarketPrices() {
   }
 }
 
-// Rendering Logic
+// ============================================================================
+// [섹션 5] 화면 렌더링 로직 (Rendering Logic)
+// state에 저장된 데이터를 읽어 index.html의 각 화면 영역에 값을 채워넣는 함수들
+// ============================================================================
+
+/**
+ * 대시보드 전체 UI 컴포넌트 렌더링 총괄 실행
+ */
 function renderApp() {
   if (!state.dashboard) return;
 
@@ -416,6 +554,11 @@ function renderApp() {
   if (window.lucide) lucide.createIcons();
 }
 
+/**
+ * [화면 영역: 2. 상단 네비게이션 헤더]
+ * 종가 기준일자(예: 09/14 종가) 및 당일/직전영업일 확정 배지 텍스트 갱신
+ * [적용 대상 HTML ID: index.html #header-base-date, #header-market-badge, #card-as-of-badge]
+ */
 function renderHeader() {
   const summary = state.dashboard.summary;
   const baseDateEl = document.getElementById('header-base-date');
@@ -437,15 +580,20 @@ function renderHeader() {
   }
 }
 
+/**
+ * [화면 영역: 메인 2. 총 평가금액 요약 대시보드 카드]
+ * 총 평가금액, 투자원금, 평가손익, 총 수익률 수치 및 색상(+빨강/-파랑) 반영
+ * [적용 대상 HTML ID: index.html #total-valuation, #total-invested, #total-pnl, #total-return-badge]
+ */
 function renderSummaryCard() {
   const summary = state.dashboard.summary;
   if (!summary) return;
 
-  // Total Valuation
+  // 1) 총 평가금액 & 투자원금
   document.getElementById('total-valuation').textContent = formatNumber(summary.total_valuation);
   document.getElementById('total-invested').textContent = formatWon(summary.total_invested);
 
-  // Profit/Loss & Return Rate
+  // 2) 평가손익 및 수익률 배지
   const pnlEl = document.getElementById('total-pnl');
   const badgeEl = document.getElementById('total-return-badge');
   const pnlNum = parseFloat(summary.total_pnl);
@@ -464,6 +612,11 @@ function renderSummaryCard() {
   }
 }
 
+/**
+ * [화면 영역: 메인 3. 계좌 그룹 필터 탭 네비게이션]
+ * '전체' 탭 및 사용자의 각 계좌(연금저축, IRP, ISA 등) 버튼을 동적으로 생성
+ * [적용 대상 HTML ID: index.html #group-tabs-container]
+ */
 function renderGroupTabs() {
   const container = document.getElementById('group-tabs-container');
   container.innerHTML = '';
@@ -471,7 +624,7 @@ function renderGroupTabs() {
   const allHoldingsCount = (state.dashboard.all_holdings || []).length;
   const isAllActive = state.activeGroupId === null;
 
-  // 1. "전체" Tab
+  // 1) "전체" 탭 버튼 생성
   const allBtn = document.createElement('button');
   allBtn.className = `px-3.5 py-1.5 rounded-full font-semibold whitespace-nowrap transition-all touch-active flex items-center gap-1.5 ${
     isAllActive
@@ -480,12 +633,12 @@ function renderGroupTabs() {
   }`;
   allBtn.innerHTML = `<span>전체</span><span class="text-[10px] px-1.5 py-0.2 rounded-full ${isAllActive ? 'bg-blue-700 text-blue-100' : 'bg-slate-700 text-slate-300'}">${allHoldingsCount}</span>`;
   allBtn.onclick = () => {
-    state.activeGroupId = null;
+    state.activeGroupId = null; // '전체' 선택
     renderApp();
   };
   container.appendChild(allBtn);
 
-  // 2. Groups Tabs
+  // 2) 개별 계좌 그룹 탭 버튼들 동적 생성
   state.groups.forEach((grp) => {
     const isActive = state.activeGroupId === grp.group_id;
     const btn = document.createElement('button');
@@ -500,19 +653,27 @@ function renderGroupTabs() {
       <span class="text-[10px] px-1.5 py-0.2 rounded-full ${isActive ? 'bg-blue-700 text-blue-100' : 'bg-slate-700 text-slate-300'}">${(grp.holdings || []).length}</span>
     `;
     btn.onclick = () => {
-      state.activeGroupId = grp.group_id;
+      state.activeGroupId = grp.group_id; // 특정 계좌 선택
       renderApp();
     };
     container.appendChild(btn);
   });
 }
 
+/**
+ * [화면 영역: 메인 4 vs 메인 5 교체 렌더링]
+ * - '전체' 탭 활성화 시: [메인 4] 자산 배분 비중 바(#allocation-section) 노출
+ * - 개별 계좌 선택 시: [메인 5] 선택된 계좌 상세 카드(#single-account-section) 노출 (DC/IRP 위험자산 비중 포함)
+ * [적용 대상 HTML ID: index.html #allocation-section, #single-account-section]
+ */
 function renderAllocationOrAccountCard() {
   const allocationSection = document.getElementById('allocation-section');
   const singleAccountSection = document.getElementById('single-account-section');
 
   if (state.activeGroupId === null) {
-    // Show Stacked Allocation Bar
+    // =======================================================================
+    // [메인 4] 전체 계좌 자산 배분 비중 막대그래프 렌더링
+    // =======================================================================
     allocationSection.classList.remove('hidden');
     singleAccountSection.classList.add('hidden');
 
@@ -531,11 +692,12 @@ function renderAllocationOrAccountCard() {
       return;
     }
 
+    // 각 계좌별 비중만큼 가로 세그먼트 막대 및 하단 범례 추가
     state.groups.forEach((grp) => {
       const val = parseFloat(grp.valuation_amount || 0);
       const weight = parseFloat(grp.weight_percent || 0);
       if (val > 0) {
-        // Bar segment
+        // 배분 막대 세그먼트
         const seg = document.createElement('div');
         seg.className = 'h-full transition-all duration-300';
         seg.style.width = `${weight}%`;
@@ -543,7 +705,7 @@ function renderAllocationOrAccountCard() {
         seg.title = `${grp.name}: ${weight}%`;
         barContainer.appendChild(seg);
 
-        // Legend pill
+        // 하단 범례 알약 표시
         const leg = document.createElement('div');
         leg.className = 'flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-800/80 border border-slate-750 text-slate-300';
         leg.innerHTML = `
@@ -555,13 +717,16 @@ function renderAllocationOrAccountCard() {
       }
     });
   } else {
-    // Show Single Account Detail Card
+    // =======================================================================
+    // [메인 5] 선택된 단일 계좌 상세 요약 카드 렌더링
+    // =======================================================================
     allocationSection.classList.add('hidden');
     singleAccountSection.classList.remove('hidden');
 
     const grp = state.groups.find((g) => g.group_id === state.activeGroupId);
     if (!grp) return;
 
+    // 계좌명, 유형, 태그 색상, 비중
     document.getElementById('single-acc-name').textContent = grp.name;
     document.getElementById('single-acc-type').textContent = grp.account_type;
     document.getElementById('single-acc-color-dot').style.backgroundColor = grp.color || '#3B82F6';
@@ -573,21 +738,21 @@ function renderAllocationOrAccountCard() {
     const returnVal = parseFloat(grp.return_rate || 0);
     const pnlClass = getPnlClass(pnlVal);
 
-    // 1. 수익금 (평가손익)
+    // 1) 수익금 (평가손익)
     const pnlAmountEl = document.getElementById('single-acc-pnl-amount');
     if (pnlAmountEl) {
       pnlAmountEl.textContent = formatPnlWon(pnlVal);
       pnlAmountEl.className = `text-xs font-bold num-tabular truncate block ${pnlClass}`;
     }
 
-    // 2. 수익률
+    // 2) 수익률
     const returnRateEl = document.getElementById('single-acc-return-rate') || document.getElementById('single-acc-pnl');
     if (returnRateEl) {
       returnRateEl.textContent = formatPercent(returnVal);
       returnRateEl.className = `text-xs font-bold num-tabular truncate block ${pnlClass}`;
     }
 
-    // 3. DC / IRP 계좌 위험자산 vs NO위험자산 합산 금액 표시
+    // 3) 퇴직연금(DC / IRP) 계좌의 위험자산 vs NO위험자산 비중 계산 및 배너 표시
     const riskBreakdownEl = document.getElementById('single-acc-risk-breakdown');
     const riskAmountEl = document.getElementById('single-acc-risk-amount');
     const nonRiskAmountEl = document.getElementById('single-acc-non-risk-amount');
@@ -646,9 +811,13 @@ function renderAllocationOrAccountCard() {
   }
 }
 
+// 드래그 앤 드롭 상태 변수
 let draggedHoldingCard = null;
 let isDraggingHolding = false;
 
+/**
+ * 선택된 계좌 필터 및 정렬 기준(평가금액순, 수익률순, 이름순 등)에 따라 종목 목록 정렬
+ */
 function getSortedFilteredHoldings() {
   let list = [];
   if (state.activeGroupId === null) {
@@ -658,7 +827,7 @@ function getSortedFilteredHoldings() {
     list = grp ? [...(grp.holdings || [])] : [];
   }
 
-  // Sort
+  // 정렬 옵션 처리
   switch (state.currentSort) {
     case 'custom':
       list.sort((a, b) => {
@@ -692,6 +861,12 @@ function getSortedFilteredHoldings() {
   return list;
 }
 
+/**
+ * [화면 영역: 메인 6. 보유 종목 리스트 섹션]
+ * 보유 종목 카드 목록 동적 렌더링 (카드 클릭 시 상세 모달 #modal-holding-detail 호출)
+ * 및 PC/모바일 드래그 앤 드롭 순서 변경 이벤트 핸들러 바인딩
+ * [적용 대상 HTML ID: index.html #holdings-list, #holdings-count-badge, #holdings-empty-state]
+ */
 function renderHoldings() {
   const holdings = getSortedFilteredHoldings();
   const listContainer = document.getElementById('holdings-list');
@@ -700,6 +875,7 @@ function renderHoldings() {
 
   countBadge.textContent = holdings.length;
 
+  // 종목이 없을 때 빈 화면(Empty state) 처리
   if (holdings.length === 0) {
     listContainer.innerHTML = '';
     listContainer.classList.add('hidden');
@@ -711,6 +887,7 @@ function renderHoldings() {
   listContainer.classList.remove('hidden');
   listContainer.innerHTML = '';
 
+  // 각 보유 종목 카드 렌더링
   holdings.forEach((h) => {
     const pnlNum = parseFloat(h.pnl || 0);
     const returnNum = parseFloat(h.return_rate || 0);
@@ -724,18 +901,24 @@ function renderHoldings() {
     card.setAttribute('draggable', 'true');
     card.dataset.holdingId = h.holding_id;
 
-    // 계좌선택후 보여지는 보유종목 카드형 관련 코드 시작
+    // =======================================================================
+    // [카드 내부 UI] 드래그 손잡이, 계좌 태그, 티커, 현재가, 종목명, 보유주수/평단가, 평가금액, 평가손익
+    // =======================================================================
     card.innerHTML = `
       <div class="flex justify-between items-start mb-2">
         <div class="flex items-center gap-1.5">
+          <!-- 드래그 정렬 손잡이 아이콘 -->
           <div class="drag-handle text-slate-500 hover:text-slate-300 p-1 -ml-1 rounded transition-colors" title="드래그하여 순서 변경">
             <i data-lucide="grip-vertical" class="w-4 h-4"></i>
           </div>
+          <!-- 소속 계좌 태그 뱃지 -->
           <span class="text-[11px] px-2 py-0.5 rounded-full font-semibold text-white shadow-xs" style="background-color: ${h.group_color || '#3B82F6'}">
             ${h.group_name || '기본'}
           </span>
+          <!-- 6자리 종목코드 -->
           <span class="text-xs font-mono text-slate-400 font-semibold">${h.ticker}</span>
         </div>
+        <!-- 현재가 및 전일대비 등락률 -->
         <div class="flex items-center gap-1 text-right">
           <span class="text-xs font-extrabold text-white num-tabular">현재가 : ${formatWon(h.close_price)}</span>
           <span class="text-[10px] font-bold num-tabular px-1 py-0.2 rounded ${changeClass} bg-slate-900/60">
@@ -744,6 +927,7 @@ function renderHoldings() {
         </div>
       </div>
 
+      <!-- 종목명 및 수량/평단가/원금 -->
       <div class="mb-3">
         <h3 class="text-sm font-bold text-white tracking-tight leading-snug line-clamp-1">${formatHoldingDisplayName(h.name_kr, h.group_name, h.account_type)}</h3>
         <p class="text-[13px] text-slate-300 num-tabular mt-1 leading-relaxed">
@@ -753,6 +937,7 @@ function renderHoldings() {
         </p>
       </div>
 
+      <!-- 평가금액 및 평가손익(수익률) 2열 요약 -->
       <div class="pt-2.5 border-t border-slate-700/60 flex justify-between items-center text-sm">
         <div>
           <span class="text-xs font-bold text-slate-100 block mb-0.5">평가금액</span>
@@ -766,16 +951,15 @@ function renderHoldings() {
         </div>
       </div>
     `;
-    // 계좌선택후 보여지는 보유종목 카드형 관련 코드 끝
 
-    // Click handler to open detail modal
+    // 카드 클릭 시 [모달 2] 상세 정보 및 거래내역 모달 열기
     card.onclick = (e) => {
       if (isDraggingHolding) return;
       if (e.target.closest('.drag-handle')) return;
       openHoldingDetail(h);
     };
 
-    // Desktop Mouse Drag Start
+    // 데스크톱 마우스 드래그 이벤트 (순서 변경 시작/종료)
     card.addEventListener('dragstart', (e) => {
       isDraggingHolding = true;
       draggedHoldingCard = card;
@@ -786,7 +970,6 @@ function renderHoldings() {
       }, 0);
     });
 
-    // Desktop Mouse Drag End
     card.addEventListener('dragend', () => {
       card.classList.remove('is-dragging');
       draggedHoldingCard = null;
@@ -795,7 +978,7 @@ function renderHoldings() {
       }, 120);
     });
 
-    // Mobile Touch Drag Support via drag-handle
+    // 모바일 터치 드래그 지원 (손잡이 터치 시)
     const dragHandle = card.querySelector('.drag-handle');
     if (dragHandle) {
       dragHandle.addEventListener('touchstart', (e) => {
@@ -839,10 +1022,13 @@ function renderHoldings() {
   if (window.lucide) lucide.createIcons();
 }
 
+/**
+ * 드래그로 변경된 종목 순서를 백엔드 API에 영구 저장
+ */
 async function saveNewHoldingsOrder(newOrderedIds) {
   if (!newOrderedIds || newOrderedIds.length <= 1) return;
 
-  // 1. Switch to custom sort if not already
+  // 1) 정렬 방식을 자동으로 '사용자 지정순'으로 전환
   if (state.currentSort !== 'custom') {
     state.currentSort = 'custom';
     localStorage.setItem('etf_sort_preference', 'custom');
@@ -850,7 +1036,7 @@ async function saveNewHoldingsOrder(newOrderedIds) {
     if (sortSel) sortSel.value = 'custom';
   }
 
-  // 2. Map holding_id to new sort_order and update local state immediately
+  // 2) 로컬 state에 순서 즉시 반영 (낙관적 업데이트)
   const orderMap = new Map();
   newOrderedIds.forEach((id, idx) => orderMap.set(id, idx));
 
@@ -875,7 +1061,7 @@ async function saveNewHoldingsOrder(newOrderedIds) {
     });
   }
 
-  // 3. Persist to backend API
+  // 3) 백엔드 API 호출로 순서 영구 저장
   try {
     await apiFetch('/api/v1/holdings/reorder', {
       method: 'PATCH',
@@ -892,21 +1078,33 @@ async function saveNewHoldingsOrder(newOrderedIds) {
   }
 }
 
-// Holding Detail Modal
+// ============================================================================
+// [섹션 6] 모달 2: 보유 종목 상세 & 거래 이력 (Holding Detail Modal)
+// 보유 종목 클릭 시 올라오는 바텀시트
+// [적용 대상 HTML ID: index.html #modal-holding-detail]
+// ============================================================================
+
+/**
+ * 종목 상세 바텀시트 모달 열기 및 데이터 바인딩
+ * [적용 대상 HTML ID: index.html #modal-holding-detail 내 각 표시 필드]
+ */
 async function openHoldingDetail(holding) {
   state.selectedHolding = holding;
 
+  // 헤더: 소속 계좌, 종목코드, 종목명, 현재가
   document.getElementById('detail-group-badge').textContent = holding.group_name || '계좌';
   document.getElementById('detail-group-badge').style.backgroundColor = holding.group_color || '#3B82F6';
   document.getElementById('detail-ticker').textContent = holding.ticker;
   document.getElementById('detail-name').textContent = formatHoldingDisplayName(holding.name_kr, holding.group_name, holding.account_type);
   document.getElementById('detail-current-price').textContent = formatWon(holding.close_price);
 
+  // 전일 종가 대비 등락률
   const changeNum = parseFloat(holding.change_rate || 0) * 100;
   const changeEl = document.getElementById('detail-change-rate');
   changeEl.textContent = formatPercent(changeNum);
   changeEl.className = `text-xs font-bold num-tabular ${getPnlClass(changeNum)}`;
 
+  // 평가손익 및 수익률
   const pnlNum = parseFloat(holding.pnl || 0);
   const returnNum = parseFloat(holding.return_rate || 0);
   const pnlEl = document.getElementById('detail-pnl');
@@ -916,15 +1114,16 @@ async function openHoldingDetail(holding) {
   returnEl.textContent = `(${formatPercent(returnNum)})`;
   returnEl.className = `text-xs font-bold num-tabular ml-1 ${getPnlClass(pnlNum)}`;
 
+  // 평가금액, 투자원금, 수량, 평단가
   document.getElementById('detail-valuation').textContent = formatWon(holding.valuation_amount);
   document.getElementById('detail-invested').textContent = formatWon(holding.invested_amount);
   document.getElementById('detail-qty').textContent = `${formatNumber(holding.quantity)}주`;
   document.getElementById('detail-avg-price').textContent = formatWon(holding.avg_price);
 
-  // ETF Master Info
+  // ETF 스펙: 운용사 정보
   document.getElementById('detail-issuer').textContent = holding.issuer || '-';
 
-  // Fetch full ETF detail for AUM and Expense ratio
+  // ETF 마스터 상세 조회 (순자산 AUM, 총보수율)
   try {
     const etfDetail = await apiFetch(`/api/v1/etfs/${holding.ticker}`);
     if (etfDetail) {
@@ -941,7 +1140,7 @@ async function openHoldingDetail(holding) {
     console.error(e);
   }
 
-  // Transactions list
+  // 과거 매수 거래 내역 리스트 채우기
   const txList = document.getElementById('detail-tx-list');
   const txCount = document.getElementById('detail-tx-count');
   txList.innerHTML = '';
@@ -978,9 +1177,17 @@ function closeHoldingDetail() {
   state.selectedHolding = null;
 }
 
-// Search & Buy Flow (F-01, F-02)
+// ============================================================================
+// [섹션 7] 모달 1: ETF 종목 검색 및 매수 등록 플로우 (Search & Buy Flow)
+// 1단계: 검색(#buy-step-search) -> 2단계: 매수 정보 입력(#buy-step-form)
+// [적용 대상 HTML ID: index.html #modal-buy]
+// ============================================================================
+
 let searchDebounceTimer = null;
 
+/**
+ * 매수 기록 모달 열기 (종목이 미리 지정되어 있으면 바로 2단계로 진입)
+ */
 function openBuyModal(prefilledETF = null, prefilledGroupId = null) {
   const modal = document.getElementById('modal-buy');
   modal.classList.remove('hidden');
@@ -1001,6 +1208,9 @@ function closeBuyModal() {
   state.selectedETF = null;
 }
 
+/**
+ * 모달 내부 화면 전환: 'search'(1단계 검색) vs 'form'(2단계 매수입력)
+ */
 function showBuyStep(step) {
   const searchStep = document.getElementById('buy-step-search');
   const formStep = document.getElementById('buy-step-form');
@@ -1018,6 +1228,10 @@ function showBuyStep(step) {
   if (window.lucide) lucide.createIcons();
 }
 
+/**
+ * [모달 1 - Step 1] ETF 실시간 초성/티커/종목명 검색 실행
+ * [적용 대상 HTML ID: index.html #etf-search-input, #search-results-list, #search-result-count]
+ */
 async function searchETFs(query) {
   const list = document.getElementById('search-results-list');
   const countEl = document.getElementById('search-result-count');
@@ -1077,17 +1291,21 @@ async function searchETFs(query) {
   }
 }
 
+/**
+ * [모달 1 - Step 2로 전환] 검색된 종목을 선택했을 때 매수 입력 폼으로 넘어가며 초기값 세팅
+ * [적용 대상 HTML ID: index.html #form-ticker, #form-name, #form-close-price, #input-buy-price 등]
+ */
 function selectETFForBuy(etf, prefilledGroupId = null) {
   state.selectedETF = etf;
   showBuyStep('form');
 
-  // Fill ETF summary
+  // 선택 종목 요약 카드 세팅
   document.getElementById('form-ticker').textContent = etf.ticker;
   document.getElementById('form-issuer').textContent = etf.issuer || '';
   document.getElementById('form-name').textContent = etf.name_kr;
   document.getElementById('form-close-price').textContent = formatWon(etf.close_price);
 
-  // Fill form inputs
+  // 폼 입력값 초기화
   const priceInput = document.getElementById('input-buy-price');
   priceInput.value = formatNumber(etf.close_price);
 
@@ -1100,11 +1318,15 @@ function selectETFForBuy(etf, prefilledGroupId = null) {
   const memoInput = document.getElementById('input-buy-memo');
   memoInput.value = '';
 
-  // Render Account selector pills
+  // 계좌 선택 알약 버튼들 렌더링
   renderBuyGroupPills(prefilledGroupId);
   updateBuyFormCalculations();
 }
 
+/**
+ * [모달 1 - Step 2] 매수할 계좌 선택 알약(Pill) 버튼 렌더링
+ * [적용 대상 HTML ID: index.html #form-group-pills]
+ */
 function renderBuyGroupPills(prefilledGroupId = null) {
   const container = document.getElementById('form-group-pills');
   container.innerHTML = '';
@@ -1138,6 +1360,10 @@ function renderBuyGroupPills(prefilledGroupId = null) {
   if (activeId) checkExistingHoldingBanner(activeId);
 }
 
+/**
+ * [모달 1 - Step 2] 선택한 계좌에 이미 보유 중인 종목인지 확인하고 가중평균 안내 배너 노출
+ * [적용 대상 HTML ID: index.html #existing-holding-banner, #existing-holding-desc]
+ */
 function checkExistingHoldingBanner(groupId) {
   const banner = document.getElementById('existing-holding-banner');
   const desc = document.getElementById('existing-holding-desc');
@@ -1155,6 +1381,10 @@ function checkExistingHoldingBanner(groupId) {
   }
 }
 
+/**
+ * [모달 1 - Step 2] 단가와 수량을 곱해 '총 매수 예상 금액' 실시간 계산
+ * [적용 대상 HTML ID: index.html #form-total-calc]
+ */
 function updateBuyFormCalculations() {
   const priceStr = document.getElementById('input-buy-price').value.replace(/[^0-9]/g, '');
   const qtyStr = document.getElementById('input-buy-qty').value;
@@ -1166,6 +1396,10 @@ function updateBuyFormCalculations() {
   document.getElementById('form-total-calc').textContent = formatWon(total);
 }
 
+/**
+ * [모달 1 - Step 2 완료 버튼] 매수 정보를 백엔드 API(/api/v1/holdings)로 전송하여 저장
+ * [적용 대상 HTML ID: index.html #btn-submit-buy]
+ */
 async function submitBuyHolding() {
   if (!state.selectedETF) return;
 
@@ -1225,7 +1459,15 @@ async function submitBuyHolding() {
   }
 }
 
-// Holding Direct Edit Modal
+// ============================================================================
+// [섹션 8] 모달 3: 보유 종목 정보 직접 수정 모달 (Edit Holding Modal)
+// [적용 대상 HTML ID: index.html #modal-edit-holding]
+// ============================================================================
+
+/**
+ * 보유 정보(평단가, 수량, 메모) 직접 수정 팝업 열기
+ * [적용 대상 HTML ID: index.html #edit-avg-price, #edit-quantity, #edit-memo]
+ */
 function openEditHoldingModal() {
   if (!state.selectedHolding) return;
   const modal = document.getElementById('modal-edit-holding');
@@ -1239,6 +1481,10 @@ function closeEditHoldingModal() {
   document.getElementById('modal-edit-holding').classList.add('hidden');
 }
 
+/**
+ * 수정한 평단가/수량/메모를 서버에 PATCH 요청으로 저장
+ * [적용 대상 HTML ID: index.html #btn-save-edit-holding]
+ */
 async function saveEditHolding() {
   if (!state.selectedHolding) return;
 
@@ -1276,6 +1522,10 @@ async function saveEditHolding() {
   }
 }
 
+/**
+ * 종목 완전 삭제 처리
+ * [적용 대상 HTML ID: index.html #btn-detail-delete]
+ */
 async function deleteHolding(holdingId) {
   if (!confirm('이 종목을 포트폴리오에서 삭제하시겠습니까? (거래 내역도 함께 삭제됩니다)')) {
     return;
@@ -1295,7 +1545,6 @@ async function deleteHolding(holdingId) {
   } catch (err) {
     console.error(err);
     if (err.message && (err.message.includes('404') || err.message.toLowerCase().includes('not found'))) {
-      // If already deleted on server, sync UI gracefully
       showToast('종목이 삭제되었습니다.', 'success');
       closeHoldingDetail();
       await loadDashboard();
@@ -1310,7 +1559,14 @@ async function deleteHolding(holdingId) {
   }
 }
 
-// Group Edit Modal
+// ============================================================================
+// [섹션 9] 모달 4 & 4.5 & 5: 계좌 관리, 정보 수정, 안전 삭제 다이얼로그
+// ============================================================================
+
+/**
+ * [모달 4.5] 계좌 정보 수정 모달 열기 (이름, 계좌 유형, 태그 색상 변경)
+ * [적용 대상 HTML ID: index.html #modal-edit-group]
+ */
 function openEditGroupModal(grp) {
   if (!grp) return;
   state.editingGroup = grp;
@@ -1349,6 +1605,10 @@ function closeEditGroupModal() {
   state.editingGroup = null;
 }
 
+/**
+ * [모달 4.5] 수정한 계좌 정보를 서버에 저장
+ * [적용 대상 HTML ID: index.html #btn-save-edit-group]
+ */
 async function saveEditGroup() {
   if (!state.editingGroup) return;
 
@@ -1395,10 +1655,13 @@ async function saveEditGroup() {
       saveBtn.disabled = false;
       saveBtn.textContent = '수정 저장';
     }
-}
+  }
 }
 
-// Group Management Modal
+/**
+ * [모달 4] 계좌 그룹 관리 바텀시트 열기
+ * [적용 대상 HTML ID: index.html #modal-groups]
+ */
 function openGroupsModal() {
   renderGroupsList();
   document.getElementById('modal-groups').classList.remove('hidden');
@@ -1409,6 +1672,10 @@ function closeGroupsModal() {
   document.getElementById('modal-groups').classList.add('hidden');
 }
 
+/**
+ * [모달 4 내부] 등록된 전체 계좌 목록 카드 동적 렌더링
+ * [적용 대상 HTML ID: index.html #groups-list]
+ */
 function renderGroupsList() {
   const list = document.getElementById('groups-list');
   list.innerHTML = '';
@@ -1426,16 +1693,18 @@ function renderGroupsList() {
         </div>
       </div>
       <div class="flex items-center gap-1.5 flex-shrink-0 ml-2">
+        <!-- 계좌 수정 버튼 -->
         <button class="btn-edit-group p-1.5 rounded-lg text-slate-400 hover:text-blue-400 hover:bg-slate-700 transition-colors" title="계좌 수정" data-group-id="${grp.group_id}">
           <i data-lucide="edit-3" class="w-4 h-4"></i>
         </button>
+        <!-- 계좌 삭제 버튼 -->
         <button class="btn-delete-group p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-700 transition-colors" title="계좌 삭제" data-group-id="${grp.group_id}" data-name="${grp.name}" data-count="${(grp.holdings || []).length}">
           <i data-lucide="trash-2" class="w-4 h-4"></i>
         </button>
       </div>
     `;
 
-    // Click on item opens edit modal
+    // 행 클릭 시 수정 모달 오픈
     item.onclick = (e) => {
       if (e.target.closest('.btn-delete-group')) return;
       openEditGroupModal(grp);
@@ -1462,6 +1731,10 @@ function renderGroupsList() {
   if (window.lucide) lucide.createIcons();
 }
 
+/**
+ * [모달 4 하단] 새 계좌 추가 폼 제출 처리
+ * [적용 대상 HTML ID: index.html #btn-create-group, #new-group-name, #new-group-type, #new-group-color]
+ */
 async function createNewGroup() {
   const nameInput = document.getElementById('new-group-name');
   const typeSelect = document.getElementById('new-group-type');
@@ -1495,6 +1768,11 @@ async function createNewGroup() {
   }
 }
 
+/**
+ * [모달 5] 계좌 삭제 클릭 시 안전장치 분기 처리
+ * - 보유 종목이 0개: 바로 확인 후 삭제
+ * - 보유 종목이 1개 이상: [모달 5 #modal-group-delete-guard] 안전 다이얼로그 오픈 (이관 후 삭제 or 영구 삭제)
+ */
 function handleDeleteGroupClick(groupId, groupName, holdingCount) {
   state.deletePendingGroupId = groupId;
 
@@ -1503,10 +1781,10 @@ function handleDeleteGroupClick(groupId, groupName, holdingCount) {
       executeDeleteGroup(groupId);
     }
   } else {
-    // Open Group Delete Guard Modal
     const modal = document.getElementById('modal-group-delete-guard');
     document.getElementById('delete-guard-desc').innerHTML = `<strong>'${groupName}'</strong> 계좌에 <strong>${holdingCount}개</strong>의 보유 종목이 있습니다.<br>종목을 다른 계좌로 안전하게 이관하시겠습니까?`;
 
+    // 이관 대상 계좌 셀렉트박스 옵션 채우기
     const select = document.getElementById('transfer-target-group-select');
     select.innerHTML = '';
     state.groups
@@ -1523,6 +1801,9 @@ function handleDeleteGroupClick(groupId, groupName, holdingCount) {
   }
 }
 
+/**
+ * 계좌 실제 삭제 API 호출 실행
+ */
 async function executeDeleteGroup(groupId, transferToGroupId = null, forceDelete = false) {
   try {
     let url = `/api/v1/groups/${groupId}?`;
@@ -1554,14 +1835,20 @@ async function executeDeleteGroup(groupId, transferToGroupId = null, forceDelete
   }
 }
 
-// Event Listeners Setup
+// ============================================================================
+// [섹션 10] 이벤트 리스너 통합 설정 (Setup Event Listeners)
+// HTML 요소와 JavaScript 핸들러 함수를 1:1로 연결
+// ============================================================================
 function setupEventListeners() {
   const bindClick = (id, fn) => {
     const el = document.getElementById(id);
     if (el) el.onclick = fn;
   };
 
-  // User ID Direct Input Bar Events
+  // -------------------------------------------------------------------------
+  // [메인 1] User ID 직접 입력 바 이벤트
+  // [적용 대상 HTML ID: index.html #bar-user-id-input, #btn-bar-apply-user, #btn-bar-open-user-modal]
+  // -------------------------------------------------------------------------
   bindClick('btn-bar-apply-user', () => {
     const barInput = document.getElementById('bar-user-id-input');
     if (barInput) handleApplyCustomUserId(barInput.value);
@@ -1579,17 +1866,23 @@ function setupEventListeners() {
     };
   }
 
-  // Top Navigation Actions
+  // -------------------------------------------------------------------------
+  // [상단 헤더 및 빠른 액션 버튼들]
+  // [적용 대상 HTML ID: index.html #btn-sync-market, #btn-open-groups, #btn-close-groups]
+  // -------------------------------------------------------------------------
   bindClick('btn-sync-market', syncMarketPrices);
   bindClick('btn-open-groups', openGroupsModal);
   bindClick('btn-close-groups', closeGroupsModal);
 
-  // Floating Action Button & Empty state add button
+  // 하단 플로팅 매수 버튼 & 빈 상태 매수 버튼
   bindClick('btn-open-buy', () => openBuyModal());
   bindClick('btn-empty-add', () => openBuyModal());
   bindClick('btn-quick-add-group', openGroupsModal);
 
-  // Sort Selector
+  // -------------------------------------------------------------------------
+  // [메인 6] 정렬 셀렉트박스 변경 이벤트
+  // [적용 대상 HTML ID: index.html #sort-selector]
+  // -------------------------------------------------------------------------
   const sortSelector = document.getElementById('sort-selector');
   if (sortSelector) {
     sortSelector.value = state.currentSort;
@@ -1600,7 +1893,10 @@ function setupEventListeners() {
     };
   }
 
-  // Holdings List Desktop Drag & Drop Reordering
+  // -------------------------------------------------------------------------
+  // [메인 6] 보유 종목 리스트 데스크톱 드래그 앤 드롭 재정렬 영역 이벤트
+  // [적용 대상 HTML ID: index.html #holdings-list]
+  // -------------------------------------------------------------------------
   const listContainer = document.getElementById('holdings-list');
   if (listContainer) {
     listContainer.addEventListener('dragover', (e) => {
@@ -1628,12 +1924,15 @@ function setupEventListeners() {
     });
   }
 
-  // Search & Buy Modal Events
+  // -------------------------------------------------------------------------
+  // [모달 1] ETF 검색 및 매수 등록 창 이벤트
+  // [적용 대상 HTML ID: index.html #modal-buy 관련 버튼 및 인풋]
+  // -------------------------------------------------------------------------
   bindClick('btn-close-buy-modal', closeBuyModal);
   bindClick('btn-back-to-search', () => showBuyStep('search'));
   bindClick('btn-submit-buy', submitBuyHolding);
 
-  // Debounced Search Input
+  // 검색어 입력 시 디바운스(200ms) 검색
   const searchInput = document.getElementById('etf-search-input');
   if (searchInput) {
     searchInput.oninput = (e) => {
@@ -1652,7 +1951,7 @@ function setupEventListeners() {
     }
   });
 
-  // Quick Chosung Chips
+  // 인기 초성 칩(ㅋㄷㅅ, ㅌㅇㄱ 등) 클릭 시 검색창 자동 반영
   document.querySelectorAll('.quick-chip').forEach((chip) => {
     chip.onclick = () => {
       const q = chip.dataset.query;
@@ -1661,7 +1960,7 @@ function setupEventListeners() {
     };
   });
 
-  // Price & Qty Form input events
+  // 매수가격 및 수량 입력 시 실시간 금액 계산
   const priceInput = document.getElementById('input-buy-price');
   if (priceInput) {
     priceInput.oninput = (e) => {
@@ -1676,6 +1975,7 @@ function setupEventListeners() {
     qtyInput.oninput = updateBuyFormCalculations;
   }
 
+  // 수량 빠른 추가 버튼 (+1, +10, +50, +100)
   document.querySelectorAll('.btn-qty-add').forEach((btn) => {
     btn.onclick = () => {
       const add = parseInt(btn.dataset.add);
@@ -1687,6 +1987,7 @@ function setupEventListeners() {
     };
   });
 
+  // '종가로 입력' 버튼
   bindClick('btn-use-market-price', () => {
     if (state.selectedETF && priceInput) {
       priceInput.value = formatNumber(state.selectedETF.close_price);
@@ -1694,7 +1995,10 @@ function setupEventListeners() {
     }
   });
 
-  // Holding Detail Sheet Events
+  // -------------------------------------------------------------------------
+  // [모달 2] 보유 종목 상세 모달 내부 버튼 이벤트
+  // [적용 대상 HTML ID: index.html #btn-close-detail, #btn-detail-add-more, #btn-detail-edit, #btn-detail-delete]
+  // -------------------------------------------------------------------------
   bindClick('btn-close-detail', closeHoldingDetail);
   bindClick('btn-detail-add-more', () => {
     if (state.selectedHolding) {
@@ -1716,12 +2020,18 @@ function setupEventListeners() {
     }
   });
 
-  // Holding Direct Edit Modal Events
+  // -------------------------------------------------------------------------
+  // [모달 3] 보유 정보 직접 수정 모달 버튼 이벤트
+  // [적용 대상 HTML ID: index.html #modal-edit-holding]
+  // -------------------------------------------------------------------------
   bindClick('btn-close-edit-holding', closeEditHoldingModal);
   bindClick('btn-cancel-edit-holding', closeEditHoldingModal);
   bindClick('btn-save-edit-holding', saveEditHolding);
 
-  // Group Direct Edit Modal Events
+  // -------------------------------------------------------------------------
+  // [모달 4.5] 계좌 정보 수정 모달 버튼 및 컬러 팔레트 이벤트
+  // [적용 대상 HTML ID: index.html #modal-edit-group]
+  // -------------------------------------------------------------------------
   bindClick('btn-edit-active-group', () => {
     if (state.activeGroupId) {
       const grp = state.groups.find((g) => g.group_id === state.activeGroupId);
@@ -1744,6 +2054,7 @@ function setupEventListeners() {
     };
   }
 
+  // 프리셋 색상 원형 버튼 클릭 이벤트
   document.querySelectorAll('#edit-group-palette button').forEach((btn) => {
     btn.onclick = () => {
       const c = btn.dataset.color;
@@ -1756,7 +2067,10 @@ function setupEventListeners() {
     };
   });
 
-  // Group Create & Delete Guard Events
+  // -------------------------------------------------------------------------
+  // [모달 4 & 5] 계좌 추가 및 삭제 확인 다이얼로그 이벤트
+  // [적용 대상 HTML ID: index.html #btn-create-group, #modal-group-delete-guard]
+  // -------------------------------------------------------------------------
   bindClick('btn-create-group', createNewGroup);
   const newGroupCol = document.getElementById('new-group-color');
   if (newGroupCol) {
@@ -1772,6 +2086,7 @@ function setupEventListeners() {
     state.deletePendingGroupId = null;
   });
 
+  // 이관 후 삭제 확정
   bindClick('btn-confirm-transfer-delete', () => {
     const sel = document.getElementById('transfer-target-group-select');
     const targetGroupId = sel ? sel.value : null;
@@ -1780,6 +2095,7 @@ function setupEventListeners() {
     }
   });
 
+  // 영구 삭제 확정
   bindClick('btn-confirm-force-delete', () => {
     if (confirm('정말로 이 계좌의 모든 보유 종목과 거래 기록을 영구 삭제하시겠습니까?')) {
       if (state.deletePendingGroupId) {
@@ -1788,7 +2104,10 @@ function setupEventListeners() {
     }
   });
 
-  // User Settings Modal Logic
+  // -------------------------------------------------------------------------
+  // [모달 6] 사용자 계정 (User ID) 설정 모달 내부 로직
+  // [적용 대상 HTML ID: index.html #modal-user-settings]
+  // -------------------------------------------------------------------------
   async function openUserSettingsModal() {
     const modal = document.getElementById('modal-user-settings');
     if (!modal) return;
@@ -1803,7 +2122,7 @@ function setupEventListeners() {
     if (displayInput) displayInput.value = currentId;
     if (customInput) customInput.value = currentId;
 
-    // Fetch current user status
+    // 현재 사용자 상태 조회 (보유 계좌수 / 종목수)
     try {
       const meRes = await apiFetch('/api/v1/users/me');
       if (statusBadge) {
@@ -1818,7 +2137,7 @@ function setupEventListeners() {
       if (statusBadge) statusBadge.textContent = '조회 실패';
     }
 
-    // Populate registered users dropdown
+    // DB에 등록된 계정 목록 드롭다운 채우기
     try {
       const users = await apiFetch('/api/v1/users');
       if (userSelect && Array.isArray(users)) {
@@ -1866,7 +2185,7 @@ function setupEventListeners() {
     }
   }
 
-  // User Settings Events
+  // 사용자 설정 모달 버튼 이벤트 연결
   const btnOpenUser = document.getElementById('btn-open-user-settings');
   if (btnOpenUser) btnOpenUser.onclick = openUserSettingsModal;
 
@@ -1876,6 +2195,7 @@ function setupEventListeners() {
   const btnDoneUser = document.getElementById('btn-done-user-modal');
   if (btnDoneUser) btnDoneUser.onclick = closeUserSettingsModal;
 
+  // User ID 복사 버튼
   const btnCopyUser = document.getElementById('btn-copy-user-id');
   if (btnCopyUser) {
     btnCopyUser.onclick = () => {
@@ -1892,11 +2212,13 @@ function setupEventListeners() {
     };
   }
 
+  // 원래 계좌(5계좌/64종목) 원클릭 복원 버튼
   const btnRestorePrimary = document.getElementById('btn-restore-primary-user');
   if (btnRestorePrimary) {
     btnRestorePrimary.onclick = () => handleApplyCustomUserId(DEFAULT_PRIMARY_USER_ID);
   }
 
+  // 직접 입력한 User ID 적용 버튼
   const btnApplyCustom = document.getElementById('btn-apply-custom-user-id');
   if (btnApplyCustom) {
     btnApplyCustom.onclick = () => {
@@ -1915,6 +2237,7 @@ function setupEventListeners() {
     };
   }
 
+  // DB 등록 목록에서 선택 변경 버튼
   const btnSwitchSelect = document.getElementById('btn-switch-selected-user');
   if (btnSwitchSelect) {
     btnSwitchSelect.onclick = () => {
@@ -1923,7 +2246,9 @@ function setupEventListeners() {
     };
   }
 
-  // Close modals on background click (handling nested modals correctly)
+  // -------------------------------------------------------------------------
+  // [공통 모달 닫기] 모달 바깥 어두운 배경(backdrop) 클릭 시 닫기 처리
+  // -------------------------------------------------------------------------
   window.onclick = (e) => {
     if (!e.target.classList.contains('modal-backdrop')) return;
 
@@ -1953,7 +2278,11 @@ function setupEventListeners() {
   };
 }
 
-// Register Service Worker for PWA
+// ============================================================================
+// [섹션 11] PWA Service Worker 및 앱 진입점 초기화
+// ============================================================================
+
+// PWA 서비스 워커 등록
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').then((reg) => {
@@ -1964,7 +2293,7 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// Clear stale service worker caches
+// 이전 캐시 정리
 if ('caches' in window) {
   caches.keys().then((keys) => {
     keys.forEach((key) => {
@@ -1975,7 +2304,9 @@ if ('caches' in window) {
   });
 }
 
-// App Initialization
+/**
+ * [앱 최초 진입점] DOM이 모두 로드되면 사용자 정보 표시, 이벤트 바인딩 및 데이터 조회 시작
+ */
 document.addEventListener('DOMContentLoaded', () => {
   updateUserHeaderDisplay();
   setupEventListeners();
