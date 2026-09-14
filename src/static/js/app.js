@@ -3,56 +3,76 @@
  * KRX ETF Portfolio Management App - Client Engine (app.js)
  * ============================================================================
  * 
- * [app.js 핵심 구조 & index.html 매핑 총괄 안내]
+ * [app.js 핵심 구조 & index.html 코드 라인(Line) 정밀 매핑 총괄 안내]
  * ----------------------------------------------------------------------------
  * 1. [전역 상태 & 유틸리티 / 포맷터]
  *    - state: 앱 전체 데이터 상태 관리
- *    - formatWon, formatPnlWon, formatPercent, getPnlClass: 금액 및 손익(+빨강/-파랑) 서식화
- *    - formatHoldingDisplayName: DC/IRP 계좌 내 채권/TDF에 '(NO위험자산)' 자동 표기
- *    - showToast: [적용: index.html #toast-container] 상단 알림 토스트 메시지 출력
+ *    - formatWon, formatPnlWon, formatPercent, getPnlClass:
+ *      [적용: index.html 전역 금액 및 수익률/등락률 텍스트 서식화]
+ *    - formatHoldingDisplayName: DC/IRP 계좌 내 채권/TDF에 '(NO위험자산)' 라벨 자동 부여
+ *    - showToast:
+ *      [적용: index.html L1015-L1021 #toast-container] 화면 상단 토스트 알림 메시지 팝업
  * 
  * 2. [사용자 ID & 백엔드 통신 계층]
  *    - getUserId, setUserId, updateUserHeaderDisplay:
- *      [적용: index.html #header-user-short-id, #bar-user-id-input] 상단 사용자 ID 갱신
- *    - detectWorkingApiBase, apiFetch: FastAPI 백엔드 통신 및 포트 자동 감지
- *    - showDashboardErrorBanner: [적용: index.html <main>] 서버 연결 오류 배너
+ *      [적용: index.html L108-L111 #header-user-short-id / L133-L154 #bar-user-id-input]
+ *    - detectWorkingApiBase, apiFetch: FastAPI 백엔드 포트 자동 감지 및 API 호출
+ *    - showDashboardErrorBanner:
+ *      [적용: index.html L130 <main> 최상단 동적 삽입] 서버 연결 실패 안내 및 재시도 배너
  * 
  * 3. [데이터 조회 & 시세 동기화]
- *    - loadDashboard: 백엔드 API에서 포트폴리오 데이터를 불러와 전체 화면 갱신
- *    - syncMarketPrices: [적용: index.html #btn-sync-market, #sync-icon-wrapper] 시세 새로고침 회전 애니메이션
+ *    - loadDashboard: 백엔드 API에서 포트폴리오 데이터를 불러와 전체 화면 렌더링 호출
+ *    - syncMarketPrices:
+ *      [적용: index.html L114-L118 #btn-sync-market, #sync-icon-wrapper] 시세 새로고침 회전 애니메이션
  * 
  * 4. [화면 렌더링 (UI Rendering) 엔진]
- *    - renderHeader: [적용: index.html #header-base-date, #header-market-badge] 상단 기준일자 표시
- *    - renderSummaryCard: [적용: index.html 메인 2 총 평가금액 카드 (#total-valuation, #total-invested, #total-pnl)]
- *    - renderGroupTabs: [적용: index.html 메인 3 계좌 탭 바 (#group-tabs-container)]
+ *    - renderHeader:
+ *      [적용: index.html L96-L101 #header-base-date, #header-market-badge / L168 #card-as-of-badge]
+ *    - renderSummaryCard:
+ *      [적용: index.html L156-L195 메인 2 총 평가금액 대시보드 카드]
+ *      (#total-valuation L174, #total-invested L182, #total-pnl L188, #total-return-badge L189)
+ *    - renderGroupTabs:
+ *      [적용: index.html L197-L218 메인 3 계좌 그룹 탭 바] (#group-tabs-container L212)
  *    - renderAllocationOrAccountCard:
- *      - '전체' 탭: [적용: index.html 메인 4 자산 배분 비중 막대 (#allocation-section)]
- *      - 개별 계좌 탭: [적용: index.html 메인 5 개별 계좌 요약 카드 (#single-account-section)]
- *    - renderHoldings: [적용: index.html 메인 6 보유 종목 목록 (#holdings-list, #holdings-count-badge)]
- *    - saveNewHoldingsOrder: 보유 종목 드래그 앤 드롭 순서 변경 결과 저장
+ *      - '전체' 탭 선택 시: [적용: index.html L220-L239 메인 4 자산 배분 비중 바] (#allocation-section L225)
+ *      - 개별 계좌 선택 시: [적용: index.html L241-L300 메인 5 단일 계좌 요약 카드] (#single-account-section L246, 위험자산 배너 L285)
+ *    - renderHoldings:
+ *      [적용: index.html L302-L340 메인 6 보유 종목 섹션]
+ *      (#holdings-count-badge L313, #sort-selector L317, #holdings-list L327, #holdings-empty-state L330)
+ *    - saveNewHoldingsOrder: 종목 드래그 앤 드롭 정렬 순서 서버 영구 저장
  * 
  * 5. [모달 2: 보유 종목 상세 & 거래 내역]
- *    - openHoldingDetail, closeHoldingDetail: [적용: index.html #modal-holding-detail]
+ *    - openHoldingDetail, closeHoldingDetail:
+ *      [적용: index.html L565-L680 #modal-holding-detail]
+ *      (#detail-name L590, #detail-current-price L594, #detail-pnl L610, #detail-tx-list L657 등)
  * 
  * 6. [모달 1: ETF 종목 검색 & 매수 등록 플로우]
- *    - openBuyModal, closeBuyModal, showBuyStep: [적용: index.html #modal-buy]
- *    - searchETFs: [적용: index.html #etf-search-input, #search-results-list] 실시간 초성/코드 검색
- *    - selectETFForBuy: 2단계 매수 입력 폼으로 전환 (#buy-step-form)
- *    - updateBuyFormCalculations, submitBuyHolding: [적용: index.html #form-total-calc, #btn-submit-buy]
+ *    - openBuyModal, closeBuyModal, showBuyStep:
+ *      [적용: index.html L381-L563 #modal-buy]
+ *    - searchETFs:
+ *      [적용: index.html L398-L445 Step 1 검색] (#etf-search-input L407, #search-results-list L438)
+ *    - selectETFForBuy, updateBuyFormCalculations, submitBuyHolding:
+ *      [적용: index.html L447-L560 Step 2 매수 입력 폼]
+ *      (#existing-holding-banner L466, #form-group-pills L480, #form-total-calc L526, #btn-submit-buy L556)
  * 
  * 7. [모달 3: 보유 종목 정보 직접 수정]
- *    - openEditHoldingModal, saveEditHolding: [적용: index.html #modal-edit-holding] (평단가, 수량, 메모)
- *    - deleteHolding: [적용: index.html #btn-detail-delete] 종목 삭제
+ *    - openEditHoldingModal, saveEditHolding:
+ *      [적용: index.html L682-L723 #modal-edit-holding] (#edit-avg-price L701, #edit-quantity L705)
+ *    - deleteHolding:
+ *      [적용: index.html L673 #btn-detail-delete] 종목 완전 삭제
  * 
- * 8. [모달 4 & 4.5 & 5: 계좌 그룹 관리 및 삭제]
- *    - openGroupsModal, renderGroupsList: [적용: index.html #modal-groups] 계좌 목록
- *    - openEditGroupModal, saveEditGroup: [적용: index.html #modal-edit-group] 계좌명/색상 수정
- *    - createNewGroup: [적용: index.html #btn-create-group] 새 계좌 생성
- *    - handleDeleteGroupClick, executeDeleteGroup: [적용: index.html #modal-group-delete-guard] 안전 삭제 다이얼로그
+ * 8. [모달 4 & 4.5 & 5: 계좌 관리 및 삭제 안전 확인]
+ *    - openGroupsModal, renderGroupsList:
+ *      [적용: index.html L725-L796 #modal-groups] (#groups-list L752, #btn-create-group L788)
+ *    - openEditGroupModal, saveEditGroup:
+ *      [적용: index.html L798-L878 #modal-edit-group] (#edit-group-name L821, #edit-group-palette L843)
+ *    - handleDeleteGroupClick, executeDeleteGroup:
+ *      [적용: index.html L880-L925 #modal-group-delete-guard] 안전 삭제 다이얼로그 (이관/영구삭제)
  * 
- * 9. [모달 6 & 이벤트 바인딩: 사용자 계정 설정]
- *    - openUserSettingsModal, handleApplyCustomUserId: [적용: index.html #modal-user-settings]
- *    - setupEventListeners: 화면 내 모든 클릭/입력 이벤트 리스너 통합 연결
+ * 9. [모달 6 & 이벤트 리스너 통합 설정]
+ *    - openUserSettingsModal, handleApplyCustomUserId:
+ *      [적용: index.html L927-L1013 #modal-user-settings] (원래 계좌 복원 L976, ID 전환 L987)
+ *    - setupEventListeners: 화면 상의 모든 버튼/인풋/모달 닫기 이벤트 리스너 바인딩
  * ============================================================================
  */
 
@@ -88,7 +108,7 @@ function formatNumber(val) {
 
 /**
  * 금액 앞에 '₩ ' 기호를 붙여 변환 (예: 50000 -> "₩ 50,000")
- * [적용: index.html 내 평가금액, 투자원금, 현재가 표시부]
+ * [적용 위치: index.html L174 #total-valuation, L182 #total-invested, L268 #single-acc-valuation 등]
  */
 function formatWon(val) {
   return `₩ ${formatNumber(val)}`;
@@ -96,7 +116,7 @@ function formatWon(val) {
 
 /**
  * 평가손익 금액을 부호(+/-)와 함께 변환 (예: 15000 -> "₩+15,000", -8000 -> "₩-8,000")
- * [적용: index.html #total-pnl, #single-acc-pnl-amount, #detail-pnl 등]
+ * [적용 위치: index.html L188 #total-pnl, L276 #single-acc-pnl-amount, L610 #detail-pnl 등]
  */
 function formatPnlWon(val) {
   if (val === null || val === undefined) return '₩ 0';
@@ -108,7 +128,7 @@ function formatPnlWon(val) {
 
 /**
  * 소수점 2자리 백분율(%) 문자열로 변환 (예: 5.234 -> "+5.23%", -1.2 -> "-1.20%")
- * [적용: index.html #total-return-badge, 등락률, 수익률 표시부]
+ * [적용 위치: index.html L189 #total-return-badge, L280 #single-acc-return-rate, L598 #detail-change-rate 등]
  */
 function formatPercent(val) {
   if (val === null || val === undefined) return '0.00%';
@@ -132,7 +152,7 @@ function getPnlColor(val) {
 
 /**
  * 손익에 따른 Tailwind CSS 텍스트 컬러 클래스 반환
- * [적용: index.html 내 수익률 및 평가손익 텍스트 컬러]
+ * [적용 위치: index.html L188 #total-pnl, L610 #detail-pnl, 카드 내부 수익률 텍스트]
  */
 function getPnlClass(val) {
   const num = typeof val === 'string' ? parseFloat(val) : val;
@@ -146,7 +166,7 @@ function getPnlClass(val) {
 
 /**
  * DC / IRP 퇴직연금 계좌에서 안전자산(TDF, 채권혼합 등)에 '(NO위험자산)' 라벨을 붙여 반환
- * [적용: index.html 보유 종목 카드 제목 및 상세 모달 종목명]
+ * [적용 위치: index.html L327 #holdings-list 종목 카드 제목, L590 #detail-name]
  */
 function formatHoldingDisplayName(nameKr, groupName, accountType) {
   if (!nameKr) return '';
@@ -163,7 +183,7 @@ function formatHoldingDisplayName(nameKr, groupName, accountType) {
 
 /**
  * 화면 상단 중앙에 일시적인 토스트 알림 메시지 띄우기
- * [적용 대상 HTML ID: index.html #toast-container]
+ * [적용 대상 코드: index.html L1015-L1021 #toast-container 컨테이너에 동적 생성]
  * @param {string} message - 표시할 안내 문구
  * @param {'info'|'success'|'error'|'warning'} type - 알림 종류
  */
@@ -234,7 +254,7 @@ function setUserId(newId) {
 
 /**
  * 상단 헤더 및 빠른 입력 바의 User ID 텍스트 갱신
- * [적용 대상 HTML ID: index.html #header-user-short-id, #bar-user-id-input]
+ * [적용 대상 코드: index.html L108-L111 #header-user-short-id / L142 #bar-user-id-input]
  */
 function updateUserHeaderDisplay() {
   const uid = getUserId();
@@ -377,7 +397,7 @@ async function apiFetch(endpoint, options = {}) {
 
 /**
  * 대시보드 데이터 로드 실패 시 메인 화면 최상단에 재시도 에러 배너 노출
- * [적용 대상 HTML 위치: index.html <main> 태그 최상단]
+ * [적용 대상 코드: index.html L130 <main> 태그 최상단에 #dashboard-error-banner 동적 생성]
  */
 function showDashboardErrorBanner(errorMessage) {
   let errorBanner = document.getElementById('dashboard-error-banner');
@@ -457,7 +477,7 @@ async function loadDashboard(isRetry = false) {
 
 /**
  * 상단 시세 동기화 버튼 회전 애니메이션 시작
- * [적용 대상 HTML ID: index.html #btn-sync-market, #sync-icon-wrapper]
+ * [적용 대상 코드: index.html L114-L118 #btn-sync-market, #sync-icon-wrapper]
  */
 function startSyncAnimation() {
   state.isSyncing = true;
@@ -472,7 +492,7 @@ function startSyncAnimation() {
 
 /**
  * 상단 시세 동기화 버튼 회전 애니메이션 완전 정지 및 아이콘 복구
- * [적용 대상 HTML ID: index.html #btn-sync-market, #sync-icon-wrapper]
+ * [적용 대상 코드: index.html L114-L118 #btn-sync-market, #sync-icon-wrapper]
  */
 function stopSyncAnimation() {
   state.isSyncing = false;
@@ -504,7 +524,7 @@ function stopSyncAnimation() {
 
 /**
  * [새로고침 버튼 동작] KRX 최신 시세를 수집·갱신하고 대시보드를 새로고침
- * [적용 대상 HTML ID: index.html #btn-sync-market 클릭 시 호출]
+ * [적용 대상 코드: index.html L114-L118 #btn-sync-market 클릭 시 호출]
  */
 async function syncMarketPrices() {
   if (state.isSyncing) return;
@@ -557,7 +577,7 @@ function renderApp() {
 /**
  * [화면 영역: 2. 상단 네비게이션 헤더]
  * 종가 기준일자(예: 09/14 종가) 및 당일/직전영업일 확정 배지 텍스트 갱신
- * [적용 대상 HTML ID: index.html #header-base-date, #header-market-badge, #card-as-of-badge]
+ * [적용 대상 코드: index.html L97-L100 #header-market-badge, #header-base-date / L168 #card-as-of-badge]
  */
 function renderHeader() {
   const summary = state.dashboard.summary;
@@ -583,17 +603,17 @@ function renderHeader() {
 /**
  * [화면 영역: 메인 2. 총 평가금액 요약 대시보드 카드]
  * 총 평가금액, 투자원금, 평가손익, 총 수익률 수치 및 색상(+빨강/-파랑) 반영
- * [적용 대상 HTML ID: index.html #total-valuation, #total-invested, #total-pnl, #total-return-badge]
+ * [적용 대상 코드: index.html L174 #total-valuation, L182 #total-invested, L188 #total-pnl, L189 #total-return-badge]
  */
 function renderSummaryCard() {
   const summary = state.dashboard.summary;
   if (!summary) return;
 
-  // 1) 총 평가금액 & 투자원금
+  // 1) 총 평가금액 & 투자원금 (index.html L174, L182)
   document.getElementById('total-valuation').textContent = formatNumber(summary.total_valuation);
   document.getElementById('total-invested').textContent = formatWon(summary.total_invested);
 
-  // 2) 평가손익 및 수익률 배지
+  // 2) 평가손익 및 수익률 배지 (index.html L188, L189)
   const pnlEl = document.getElementById('total-pnl');
   const badgeEl = document.getElementById('total-return-badge');
   const pnlNum = parseFloat(summary.total_pnl);
@@ -615,7 +635,7 @@ function renderSummaryCard() {
 /**
  * [화면 영역: 메인 3. 계좌 그룹 필터 탭 네비게이션]
  * '전체' 탭 및 사용자의 각 계좌(연금저축, IRP, ISA 등) 버튼을 동적으로 생성
- * [적용 대상 HTML ID: index.html #group-tabs-container]
+ * [적용 대상 코드: index.html L212 #group-tabs-container]
  */
 function renderGroupTabs() {
   const container = document.getElementById('group-tabs-container');
@@ -664,7 +684,7 @@ function renderGroupTabs() {
  * [화면 영역: 메인 4 vs 메인 5 교체 렌더링]
  * - '전체' 탭 활성화 시: [메인 4] 자산 배분 비중 바(#allocation-section) 노출
  * - 개별 계좌 선택 시: [메인 5] 선택된 계좌 상세 카드(#single-account-section) 노출 (DC/IRP 위험자산 비중 포함)
- * [적용 대상 HTML ID: index.html #allocation-section, #single-account-section]
+ * [적용 대상 코드: index.html L225 #allocation-section vs L246 #single-account-section]
  */
 function renderAllocationOrAccountCard() {
   const allocationSection = document.getElementById('allocation-section');
@@ -672,17 +692,17 @@ function renderAllocationOrAccountCard() {
 
   if (state.activeGroupId === null) {
     // =======================================================================
-    // [메인 4] 전체 계좌 자산 배분 비중 막대그래프 렌더링
+    // [메인 4] 전체 계좌 자산 배분 비중 막대그래프 렌더링 (index.html L220-L239)
     // =======================================================================
     allocationSection.classList.remove('hidden');
     singleAccountSection.classList.add('hidden');
 
     const totalValuation = parseFloat(state.dashboard.summary.total_valuation || 0);
     const totalCount = (state.dashboard.all_holdings || []).length;
-    document.getElementById('allocation-total-count').textContent = `총 ${totalCount}종목`;
+    document.getElementById('allocation-total-count').textContent = `총 ${totalCount}종목`; // index.html L229
 
-    const barContainer = document.getElementById('allocation-bar');
-    const legendContainer = document.getElementById('allocation-legend');
+    const barContainer = document.getElementById('allocation-bar'); // index.html L232
+    const legendContainer = document.getElementById('allocation-legend'); // index.html L236
     barContainer.innerHTML = '';
     legendContainer.innerHTML = '';
 
@@ -718,7 +738,7 @@ function renderAllocationOrAccountCard() {
     });
   } else {
     // =======================================================================
-    // [메인 5] 선택된 단일 계좌 상세 요약 카드 렌더링
+    // [메인 5] 선택된 단일 계좌 상세 요약 카드 렌더링 (index.html L241-L300)
     // =======================================================================
     allocationSection.classList.add('hidden');
     singleAccountSection.classList.remove('hidden');
@@ -726,36 +746,36 @@ function renderAllocationOrAccountCard() {
     const grp = state.groups.find((g) => g.group_id === state.activeGroupId);
     if (!grp) return;
 
-    // 계좌명, 유형, 태그 색상, 비중
+    // 계좌명, 유형, 태그 색상, 비중 (index.html L250-L255)
     document.getElementById('single-acc-name').textContent = grp.name;
     document.getElementById('single-acc-type').textContent = grp.account_type;
     document.getElementById('single-acc-color-dot').style.backgroundColor = grp.color || '#3B82F6';
     document.getElementById('single-acc-weight').textContent = `비중 ${(parseFloat(grp.weight_percent) || 0).toFixed(1)}%`;
-    document.getElementById('single-acc-valuation').textContent = formatWon(grp.valuation_amount);
-    document.getElementById('single-acc-invested').textContent = formatWon(grp.invested_amount);
+    document.getElementById('single-acc-valuation').textContent = formatWon(grp.valuation_amount); // index.html L268
+    document.getElementById('single-acc-invested').textContent = formatWon(grp.invested_amount);   // index.html L272
 
     const pnlVal = parseFloat(grp.pnl || 0);
     const returnVal = parseFloat(grp.return_rate || 0);
     const pnlClass = getPnlClass(pnlVal);
 
-    // 1) 수익금 (평가손익)
+    // 1) 수익금 (평가손익) (index.html L276 #single-acc-pnl-amount)
     const pnlAmountEl = document.getElementById('single-acc-pnl-amount');
     if (pnlAmountEl) {
       pnlAmountEl.textContent = formatPnlWon(pnlVal);
       pnlAmountEl.className = `text-xs font-bold num-tabular truncate block ${pnlClass}`;
     }
 
-    // 2) 수익률
+    // 2) 수익률 (index.html L280 #single-acc-return-rate)
     const returnRateEl = document.getElementById('single-acc-return-rate') || document.getElementById('single-acc-pnl');
     if (returnRateEl) {
       returnRateEl.textContent = formatPercent(returnVal);
       returnRateEl.className = `text-xs font-bold num-tabular truncate block ${pnlClass}`;
     }
 
-    // 3) 퇴직연금(DC / IRP) 계좌의 위험자산 vs NO위험자산 비중 계산 및 배너 표시
+    // 3) 퇴직연금(DC / IRP) 계좌의 위험자산 vs NO위험자산 비중 계산 및 배너 표시 (index.html L285-L299)
     const riskBreakdownEl = document.getElementById('single-acc-risk-breakdown');
-    const riskAmountEl = document.getElementById('single-acc-risk-amount');
-    const nonRiskAmountEl = document.getElementById('single-acc-non-risk-amount');
+    const riskAmountEl = document.getElementById('single-acc-risk-amount');       // index.html L289
+    const nonRiskAmountEl = document.getElementById('single-acc-non-risk-amount'); // index.html L295
 
     const isRetirement = (grp.account_type && ['DC', 'IRP'].includes(grp.account_type.toUpperCase())) ||
                          (grp.name && (grp.name.toUpperCase().includes('DC') || grp.name.toUpperCase().includes('IRP')));
@@ -782,8 +802,8 @@ function renderAllocationOrAccountCard() {
           });
         }
 
-        const riskRatioEl = document.getElementById('single-acc-risk-ratio');
-        const nonRiskRatioEl = document.getElementById('single-acc-non-risk-ratio');
+        const riskRatioEl = document.getElementById('single-acc-risk-ratio');         // index.html L290
+        const nonRiskRatioEl = document.getElementById('single-acc-non-risk-ratio'); // index.html L296
 
         let rRatioVal = 0;
         let nrRatioVal = 0;
@@ -817,6 +837,7 @@ let isDraggingHolding = false;
 
 /**
  * 선택된 계좌 필터 및 정렬 기준(평가금액순, 수익률순, 이름순 등)에 따라 종목 목록 정렬
+ * [적용 대상 코드: index.html L317-L323 #sort-selector]
  */
 function getSortedFilteredHoldings() {
   let list = [];
@@ -865,17 +886,17 @@ function getSortedFilteredHoldings() {
  * [화면 영역: 메인 6. 보유 종목 리스트 섹션]
  * 보유 종목 카드 목록 동적 렌더링 (카드 클릭 시 상세 모달 #modal-holding-detail 호출)
  * 및 PC/모바일 드래그 앤 드롭 순서 변경 이벤트 핸들러 바인딩
- * [적용 대상 HTML ID: index.html #holdings-list, #holdings-count-badge, #holdings-empty-state]
+ * [적용 대상 코드: index.html L313 #holdings-count-badge / L327 #holdings-list / L330 #holdings-empty-state]
  */
 function renderHoldings() {
   const holdings = getSortedFilteredHoldings();
-  const listContainer = document.getElementById('holdings-list');
-  const countBadge = document.getElementById('holdings-count-badge');
-  const emptyState = document.getElementById('holdings-empty-state');
+  const listContainer = document.getElementById('holdings-list');         // index.html L327
+  const countBadge = document.getElementById('holdings-count-badge');     // index.html L313
+  const emptyState = document.getElementById('holdings-empty-state');     // index.html L330
 
   countBadge.textContent = holdings.length;
 
-  // 종목이 없을 때 빈 화면(Empty state) 처리
+  // 종목이 없을 때 빈 화면(Empty state) 처리 (index.html L330-L339)
   if (holdings.length === 0) {
     listContainer.innerHTML = '';
     listContainer.classList.add('hidden');
@@ -952,7 +973,7 @@ function renderHoldings() {
       </div>
     `;
 
-    // 카드 클릭 시 [모달 2] 상세 정보 및 거래내역 모달 열기
+    // 카드 클릭 시 [모달 2] 상세 정보 및 거래내역 모달 열기 (index.html L565-L680 #modal-holding-detail)
     card.onclick = (e) => {
       if (isDraggingHolding) return;
       if (e.target.closest('.drag-handle')) return;
@@ -1028,7 +1049,7 @@ function renderHoldings() {
 async function saveNewHoldingsOrder(newOrderedIds) {
   if (!newOrderedIds || newOrderedIds.length <= 1) return;
 
-  // 1) 정렬 방식을 자동으로 '사용자 지정순'으로 전환
+  // 1) 정렬 방식을 자동으로 '사용자 지정순'으로 전환 (index.html L317 #sort-selector)
   if (state.currentSort !== 'custom') {
     state.currentSort = 'custom';
     localStorage.setItem('etf_sort_preference', 'custom');
@@ -1081,30 +1102,31 @@ async function saveNewHoldingsOrder(newOrderedIds) {
 // ============================================================================
 // [섹션 6] 모달 2: 보유 종목 상세 & 거래 이력 (Holding Detail Modal)
 // 보유 종목 클릭 시 올라오는 바텀시트
-// [적용 대상 HTML ID: index.html #modal-holding-detail]
+// [적용 대상 코드: index.html L565-L680 #modal-holding-detail]
 // ============================================================================
 
 /**
  * 종목 상세 바텀시트 모달 열기 및 데이터 바인딩
- * [적용 대상 HTML ID: index.html #modal-holding-detail 내 각 표시 필드]
+ * [적용 대상 코드: index.html L574-L677 #modal-holding-detail 내 각 표시 필드]
  */
 async function openHoldingDetail(holding) {
   state.selectedHolding = holding;
 
-  // 헤더: 소속 계좌, 종목코드, 종목명, 현재가
+  // 헤더: 소속 계좌 배지, 종목코드 (index.html L577, L578)
   document.getElementById('detail-group-badge').textContent = holding.group_name || '계좌';
   document.getElementById('detail-group-badge').style.backgroundColor = holding.group_color || '#3B82F6';
   document.getElementById('detail-ticker').textContent = holding.ticker;
+  // 종목명 및 현재가 (index.html L590, L594)
   document.getElementById('detail-name').textContent = formatHoldingDisplayName(holding.name_kr, holding.group_name, holding.account_type);
   document.getElementById('detail-current-price').textContent = formatWon(holding.close_price);
 
-  // 전일 종가 대비 등락률
+  // 전일 종가 대비 등락률 (index.html L598 #detail-change-rate)
   const changeNum = parseFloat(holding.change_rate || 0) * 100;
   const changeEl = document.getElementById('detail-change-rate');
   changeEl.textContent = formatPercent(changeNum);
   changeEl.className = `text-xs font-bold num-tabular ${getPnlClass(changeNum)}`;
 
-  // 평가손익 및 수익률
+  // 평가손익 및 수익률 (index.html L610 #detail-pnl, L611 #detail-return-rate)
   const pnlNum = parseFloat(holding.pnl || 0);
   const returnNum = parseFloat(holding.return_rate || 0);
   const pnlEl = document.getElementById('detail-pnl');
@@ -1114,16 +1136,16 @@ async function openHoldingDetail(holding) {
   returnEl.textContent = `(${formatPercent(returnNum)})`;
   returnEl.className = `text-xs font-bold num-tabular ml-1 ${getPnlClass(pnlNum)}`;
 
-  // 평가금액, 투자원금, 수량, 평단가
+  // 평가금액, 투자원금, 수량, 평단가 (index.html L617, L621, L625, L629)
   document.getElementById('detail-valuation').textContent = formatWon(holding.valuation_amount);
   document.getElementById('detail-invested').textContent = formatWon(holding.invested_amount);
   document.getElementById('detail-qty').textContent = `${formatNumber(holding.quantity)}주`;
   document.getElementById('detail-avg-price').textContent = formatWon(holding.avg_price);
 
-  // ETF 스펙: 운용사 정보
+  // ETF 스펙: 운용사 정보 (index.html L638 #detail-issuer)
   document.getElementById('detail-issuer').textContent = holding.issuer || '-';
 
-  // ETF 마스터 상세 조회 (순자산 AUM, 총보수율)
+  // ETF 마스터 상세 조회 (순자산 AUM, 총보수율) (index.html L642 #detail-aum, L646 #detail-expense)
   try {
     const etfDetail = await apiFetch(`/api/v1/etfs/${holding.ticker}`);
     if (etfDetail) {
@@ -1140,7 +1162,7 @@ async function openHoldingDetail(holding) {
     console.error(e);
   }
 
-  // 과거 매수 거래 내역 리스트 채우기
+  // 과거 매수 거래 내역 리스트 채우기 (index.html L653 #detail-tx-count, L657 #detail-tx-list)
   const txList = document.getElementById('detail-tx-list');
   const txCount = document.getElementById('detail-tx-count');
   txList.innerHTML = '';
@@ -1180,13 +1202,14 @@ function closeHoldingDetail() {
 // ============================================================================
 // [섹션 7] 모달 1: ETF 종목 검색 및 매수 등록 플로우 (Search & Buy Flow)
 // 1단계: 검색(#buy-step-search) -> 2단계: 매수 정보 입력(#buy-step-form)
-// [적용 대상 HTML ID: index.html #modal-buy]
+// [적용 대상 코드: index.html L381-L563 #modal-buy]
 // ============================================================================
 
 let searchDebounceTimer = null;
 
 /**
  * 매수 기록 모달 열기 (종목이 미리 지정되어 있으면 바로 2단계로 진입)
+ * [적용 대상 코드: index.html L386 #modal-buy]
  */
 function openBuyModal(prefilledETF = null, prefilledGroupId = null) {
   const modal = document.getElementById('modal-buy');
@@ -1196,7 +1219,7 @@ function openBuyModal(prefilledETF = null, prefilledGroupId = null) {
     selectETFForBuy(prefilledETF, prefilledGroupId);
   } else {
     showBuyStep('search');
-    const searchInput = document.getElementById('etf-search-input');
+    const searchInput = document.getElementById('etf-search-input'); // index.html L407
     searchInput.value = '';
     searchInput.focus();
     searchETFs('');
@@ -1209,12 +1232,13 @@ function closeBuyModal() {
 }
 
 /**
- * 모달 내부 화면 전환: 'search'(1단계 검색) vs 'form'(2단계 매수입력)
+ * 모달 내부 화면 전환: 'search'(1단계 검색 L401) vs 'form'(2단계 매수입력 L450)
+ * [적용 대상 코드: index.html L401 #buy-step-search vs L450 #buy-step-form]
  */
 function showBuyStep(step) {
-  const searchStep = document.getElementById('buy-step-search');
-  const formStep = document.getElementById('buy-step-form');
-  const title = document.getElementById('buy-modal-title');
+  const searchStep = document.getElementById('buy-step-search'); // index.html L401
+  const formStep = document.getElementById('buy-step-form');     // index.html L450
+  const title = document.getElementById('buy-modal-title');       // index.html L392
 
   if (step === 'search') {
     searchStep.classList.remove('hidden');
@@ -1230,12 +1254,12 @@ function showBuyStep(step) {
 
 /**
  * [모달 1 - Step 1] ETF 실시간 초성/티커/종목명 검색 실행
- * [적용 대상 HTML ID: index.html #etf-search-input, #search-results-list, #search-result-count]
+ * [적용 대상 코드: index.html L407 #etf-search-input / L436 #search-result-count / L438 #search-results-list]
  */
 async function searchETFs(query) {
-  const list = document.getElementById('search-results-list');
-  const countEl = document.getElementById('search-result-count');
-  const clearBtn = document.getElementById('btn-clear-search');
+  const list = document.getElementById('search-results-list');   // index.html L438
+  const countEl = document.getElementById('search-result-count'); // index.html L436
+  const clearBtn = document.getElementById('btn-clear-search');  // index.html L414
 
   if (!query || !query.trim()) {
     clearBtn.classList.add('hidden');
@@ -1293,19 +1317,19 @@ async function searchETFs(query) {
 
 /**
  * [모달 1 - Step 2로 전환] 검색된 종목을 선택했을 때 매수 입력 폼으로 넘어가며 초기값 세팅
- * [적용 대상 HTML ID: index.html #form-ticker, #form-name, #form-close-price, #input-buy-price 등]
+ * [적용 대상 코드: index.html L452-L463 (#form-ticker, #form-name 등) / L497 #input-buy-price / L507 #input-buy-qty]
  */
 function selectETFForBuy(etf, prefilledGroupId = null) {
   state.selectedETF = etf;
   showBuyStep('form');
 
-  // 선택 종목 요약 카드 세팅
+  // 선택 종목 요약 카드 세팅 (index.html L455-L463)
   document.getElementById('form-ticker').textContent = etf.ticker;
   document.getElementById('form-issuer').textContent = etf.issuer || '';
   document.getElementById('form-name').textContent = etf.name_kr;
   document.getElementById('form-close-price').textContent = formatWon(etf.close_price);
 
-  // 폼 입력값 초기화
+  // 폼 입력값 초기화 (index.html L497, L507, L535, L542)
   const priceInput = document.getElementById('input-buy-price');
   priceInput.value = formatNumber(etf.close_price);
 
@@ -1325,7 +1349,7 @@ function selectETFForBuy(etf, prefilledGroupId = null) {
 
 /**
  * [모달 1 - Step 2] 매수할 계좌 선택 알약(Pill) 버튼 렌더링
- * [적용 대상 HTML ID: index.html #form-group-pills]
+ * [적용 대상 코드: index.html L480 #form-group-pills]
  */
 function renderBuyGroupPills(prefilledGroupId = null) {
   const container = document.getElementById('form-group-pills');
@@ -1362,11 +1386,11 @@ function renderBuyGroupPills(prefilledGroupId = null) {
 
 /**
  * [모달 1 - Step 2] 선택한 계좌에 이미 보유 중인 종목인지 확인하고 가중평균 안내 배너 노출
- * [적용 대상 HTML ID: index.html #existing-holding-banner, #existing-holding-desc]
+ * [적용 대상 코드: index.html L466-L475 #existing-holding-banner, #existing-holding-desc]
  */
 function checkExistingHoldingBanner(groupId) {
-  const banner = document.getElementById('existing-holding-banner');
-  const desc = document.getElementById('existing-holding-desc');
+  const banner = document.getElementById('existing-holding-banner'); // index.html L466
+  const desc = document.getElementById('existing-holding-desc');     // index.html L472
   if (!state.selectedETF) return;
 
   const targetGroup = state.groups.find((g) => g.group_id === groupId);
@@ -1383,7 +1407,7 @@ function checkExistingHoldingBanner(groupId) {
 
 /**
  * [모달 1 - Step 2] 단가와 수량을 곱해 '총 매수 예상 금액' 실시간 계산
- * [적용 대상 HTML ID: index.html #form-total-calc]
+ * [적용 대상 코드: index.html L526 #form-total-calc]
  */
 function updateBuyFormCalculations() {
   const priceStr = document.getElementById('input-buy-price').value.replace(/[^0-9]/g, '');
@@ -1393,12 +1417,12 @@ function updateBuyFormCalculations() {
   const qty = parseInt(qtyStr) || 0;
   const total = price * qty;
 
-  document.getElementById('form-total-calc').textContent = formatWon(total);
+  document.getElementById('form-total-calc').textContent = formatWon(total); // index.html L526
 }
 
 /**
  * [모달 1 - Step 2 완료 버튼] 매수 정보를 백엔드 API(/api/v1/holdings)로 전송하여 저장
- * [적용 대상 HTML ID: index.html #btn-submit-buy]
+ * [적용 대상 코드: index.html L556 #btn-submit-buy]
  */
 async function submitBuyHolding() {
   if (!state.selectedETF) return;
@@ -1427,7 +1451,7 @@ async function submitBuyHolding() {
     return;
   }
 
-  const submitBtn = document.getElementById('btn-submit-buy');
+  const submitBtn = document.getElementById('btn-submit-buy'); // index.html L556
   submitBtn.disabled = true;
   submitBtn.textContent = '등록 중...';
 
@@ -1461,12 +1485,12 @@ async function submitBuyHolding() {
 
 // ============================================================================
 // [섹션 8] 모달 3: 보유 종목 정보 직접 수정 모달 (Edit Holding Modal)
-// [적용 대상 HTML ID: index.html #modal-edit-holding]
+// [적용 대상 코드: index.html L682-L723 #modal-edit-holding]
 // ============================================================================
 
 /**
  * 보유 정보(평단가, 수량, 메모) 직접 수정 팝업 열기
- * [적용 대상 HTML ID: index.html #edit-avg-price, #edit-quantity, #edit-memo]
+ * [적용 대상 코드: index.html L701 #edit-avg-price, L705 #edit-quantity, L709 #edit-memo]
  */
 function openEditHoldingModal() {
   if (!state.selectedHolding) return;
@@ -1483,7 +1507,7 @@ function closeEditHoldingModal() {
 
 /**
  * 수정한 평단가/수량/메모를 서버에 PATCH 요청으로 저장
- * [적용 대상 HTML ID: index.html #btn-save-edit-holding]
+ * [적용 대상 코드: index.html L718 #btn-save-edit-holding]
  */
 async function saveEditHolding() {
   if (!state.selectedHolding) return;
@@ -1524,14 +1548,14 @@ async function saveEditHolding() {
 
 /**
  * 종목 완전 삭제 처리
- * [적용 대상 HTML ID: index.html #btn-detail-delete]
+ * [적용 대상 코드: index.html L673 #btn-detail-delete]
  */
 async function deleteHolding(holdingId) {
   if (!confirm('이 종목을 포트폴리오에서 삭제하시겠습니까? (거래 내역도 함께 삭제됩니다)')) {
     return;
   }
 
-  const deleteBtn = document.getElementById('btn-detail-delete');
+  const deleteBtn = document.getElementById('btn-detail-delete'); // index.html L673
   if (deleteBtn) {
     deleteBtn.disabled = true;
     deleteBtn.classList.add('opacity-50', 'cursor-not-allowed');
@@ -1565,19 +1589,19 @@ async function deleteHolding(holdingId) {
 
 /**
  * [모달 4.5] 계좌 정보 수정 모달 열기 (이름, 계좌 유형, 태그 색상 변경)
- * [적용 대상 HTML ID: index.html #modal-edit-group]
+ * [적용 대상 코드: index.html L798-L878 #modal-edit-group]
  */
 function openEditGroupModal(grp) {
   if (!grp) return;
   state.editingGroup = grp;
 
-  const nameInput = document.getElementById('edit-group-name');
-  const typeSelect = document.getElementById('edit-group-type');
-  const colorInput = document.getElementById('edit-group-color');
-  const colorHex = document.getElementById('edit-group-color-hex');
-  const colorDot = document.getElementById('edit-group-color-dot');
-  const holdingsCountEl = document.getElementById('edit-group-holdings-count');
-  const valuationEl = document.getElementById('edit-group-valuation');
+  const nameInput = document.getElementById('edit-group-name');               // index.html L821
+  const typeSelect = document.getElementById('edit-group-type');             // index.html L826
+  const colorInput = document.getElementById('edit-group-color');             // index.html L839
+  const colorHex = document.getElementById('edit-group-color-hex');           // index.html L840
+  const colorDot = document.getElementById('edit-group-color-dot');           // index.html L808
+  const holdingsCountEl = document.getElementById('edit-group-holdings-count'); // index.html L859
+  const valuationEl = document.getElementById('edit-group-valuation');       // index.html L863
 
   nameInput.value = grp.name || '';
   typeSelect.value = grp.account_type || '일반';
@@ -1607,14 +1631,14 @@ function closeEditGroupModal() {
 
 /**
  * [모달 4.5] 수정한 계좌 정보를 서버에 저장
- * [적용 대상 HTML ID: index.html #btn-save-edit-group]
+ * [적용 대상 코드: index.html L873 #btn-save-edit-group]
  */
 async function saveEditGroup() {
   if (!state.editingGroup) return;
 
-  const nameInput = document.getElementById('edit-group-name');
-  const typeSelect = document.getElementById('edit-group-type');
-  const colorInput = document.getElementById('edit-group-color');
+  const nameInput = document.getElementById('edit-group-name');   // index.html L821
+  const typeSelect = document.getElementById('edit-group-type'); // index.html L826
+  const colorInput = document.getElementById('edit-group-color'); // index.html L839
 
   const newName = nameInput.value.trim();
   if (!newName) {
@@ -1626,7 +1650,7 @@ async function saveEditGroup() {
   const newType = typeSelect.value;
   const newColor = colorInput.value;
 
-  const saveBtn = document.getElementById('btn-save-edit-group');
+  const saveBtn = document.getElementById('btn-save-edit-group'); // index.html L873
   if (saveBtn) {
     saveBtn.disabled = true;
     saveBtn.textContent = '저장 중...';
@@ -1660,7 +1684,7 @@ async function saveEditGroup() {
 
 /**
  * [모달 4] 계좌 그룹 관리 바텀시트 열기
- * [적용 대상 HTML ID: index.html #modal-groups]
+ * [적용 대상 코드: index.html L725-L796 #modal-groups]
  */
 function openGroupsModal() {
   renderGroupsList();
@@ -1674,10 +1698,10 @@ function closeGroupsModal() {
 
 /**
  * [모달 4 내부] 등록된 전체 계좌 목록 카드 동적 렌더링
- * [적용 대상 HTML ID: index.html #groups-list]
+ * [적용 대상 코드: index.html L752 #groups-list]
  */
 function renderGroupsList() {
-  const list = document.getElementById('groups-list');
+  const list = document.getElementById('groups-list'); // index.html L752
   list.innerHTML = '';
 
   state.groups.forEach((grp) => {
@@ -1733,12 +1757,12 @@ function renderGroupsList() {
 
 /**
  * [모달 4 하단] 새 계좌 추가 폼 제출 처리
- * [적용 대상 HTML ID: index.html #btn-create-group, #new-group-name, #new-group-type, #new-group-color]
+ * [적용 대상 코드: index.html L762 #new-group-name / L769 #new-group-type / L781 #new-group-color / L788 #btn-create-group]
  */
 async function createNewGroup() {
-  const nameInput = document.getElementById('new-group-name');
-  const typeSelect = document.getElementById('new-group-type');
-  const colorInput = document.getElementById('new-group-color');
+  const nameInput = document.getElementById('new-group-name');   // index.html L762
+  const typeSelect = document.getElementById('new-group-type'); // index.html L769
+  const colorInput = document.getElementById('new-group-color'); // index.html L781
 
   const name = nameInput.value.trim();
   if (!name) {
@@ -1772,6 +1796,7 @@ async function createNewGroup() {
  * [모달 5] 계좌 삭제 클릭 시 안전장치 분기 처리
  * - 보유 종목이 0개: 바로 확인 후 삭제
  * - 보유 종목이 1개 이상: [모달 5 #modal-group-delete-guard] 안전 다이얼로그 오픈 (이관 후 삭제 or 영구 삭제)
+ * [적용 대상 코드: index.html L880-L925 #modal-group-delete-guard]
  */
 function handleDeleteGroupClick(groupId, groupName, holdingCount) {
   state.deletePendingGroupId = groupId;
@@ -1781,10 +1806,10 @@ function handleDeleteGroupClick(groupId, groupName, holdingCount) {
       executeDeleteGroup(groupId);
     }
   } else {
-    const modal = document.getElementById('modal-group-delete-guard');
-    document.getElementById('delete-guard-desc').innerHTML = `<strong>'${groupName}'</strong> 계좌에 <strong>${holdingCount}개</strong>의 보유 종목이 있습니다.<br>종목을 다른 계좌로 안전하게 이관하시겠습니까?`;
+    const modal = document.getElementById('modal-group-delete-guard'); // index.html L887
+    document.getElementById('delete-guard-desc').innerHTML = `<strong>'${groupName}'</strong> 계좌에 <strong>${holdingCount}개</strong>의 보유 종목이 있습니다.<br>종목을 다른 계좌로 안전하게 이관하시겠습니까?`; // index.html L895
 
-    // 이관 대상 계좌 셀렉트박스 옵션 채우기
+    // 이관 대상 계좌 셀렉트박스 옵션 채우기 (index.html L903 #transfer-target-group-select)
     const select = document.getElementById('transfer-target-group-select');
     select.innerHTML = '';
     state.groups
@@ -1803,6 +1828,7 @@ function handleDeleteGroupClick(groupId, groupName, holdingCount) {
 
 /**
  * 계좌 실제 삭제 API 호출 실행
+ * [적용 대상 코드: index.html L906 #btn-confirm-transfer-delete / L914 #btn-confirm-force-delete]
  */
 async function executeDeleteGroup(groupId, transferToGroupId = null, forceDelete = false) {
   try {
@@ -1847,14 +1873,14 @@ function setupEventListeners() {
 
   // -------------------------------------------------------------------------
   // [메인 1] User ID 직접 입력 바 이벤트
-  // [적용 대상 HTML ID: index.html #bar-user-id-input, #btn-bar-apply-user, #btn-bar-open-user-modal]
+  // [적용 대상 코드: index.html L142 #bar-user-id-input, L146 #btn-bar-apply-user, L150 #btn-bar-open-user-modal]
   // -------------------------------------------------------------------------
   bindClick('btn-bar-apply-user', () => {
-    const barInput = document.getElementById('bar-user-id-input');
+    const barInput = document.getElementById('bar-user-id-input'); // index.html L142
     if (barInput) handleApplyCustomUserId(barInput.value);
   });
 
-  bindClick('btn-bar-open-user-modal', openUserSettingsModal);
+  bindClick('btn-bar-open-user-modal', openUserSettingsModal); // index.html L150
 
   const barInputEl = document.getElementById('bar-user-id-input');
   if (barInputEl) {
@@ -1868,20 +1894,20 @@ function setupEventListeners() {
 
   // -------------------------------------------------------------------------
   // [상단 헤더 및 빠른 액션 버튼들]
-  // [적용 대상 HTML ID: index.html #btn-sync-market, #btn-open-groups, #btn-close-groups]
+  // [적용 대상 코드: index.html L114 #btn-sync-market, L121 #btn-open-groups, L737 #btn-close-groups]
   // -------------------------------------------------------------------------
-  bindClick('btn-sync-market', syncMarketPrices);
-  bindClick('btn-open-groups', openGroupsModal);
-  bindClick('btn-close-groups', closeGroupsModal);
+  bindClick('btn-sync-market', syncMarketPrices); // index.html L114
+  bindClick('btn-open-groups', openGroupsModal);   // index.html L121
+  bindClick('btn-close-groups', closeGroupsModal); // index.html L737
 
-  // 하단 플로팅 매수 버튼 & 빈 상태 매수 버튼
+  // 하단 플로팅 매수 버튼 & 빈 상태 매수 버튼 (index.html L367 #btn-open-buy, L336 #btn-empty-add, L206 #btn-quick-add-group)
   bindClick('btn-open-buy', () => openBuyModal());
   bindClick('btn-empty-add', () => openBuyModal());
   bindClick('btn-quick-add-group', openGroupsModal);
 
   // -------------------------------------------------------------------------
   // [메인 6] 정렬 셀렉트박스 변경 이벤트
-  // [적용 대상 HTML ID: index.html #sort-selector]
+  // [적용 대상 코드: index.html L317-L323 #sort-selector]
   // -------------------------------------------------------------------------
   const sortSelector = document.getElementById('sort-selector');
   if (sortSelector) {
@@ -1895,7 +1921,7 @@ function setupEventListeners() {
 
   // -------------------------------------------------------------------------
   // [메인 6] 보유 종목 리스트 데스크톱 드래그 앤 드롭 재정렬 영역 이벤트
-  // [적용 대상 HTML ID: index.html #holdings-list]
+  // [적용 대상 코드: index.html L327 #holdings-list]
   // -------------------------------------------------------------------------
   const listContainer = document.getElementById('holdings-list');
   if (listContainer) {
@@ -1926,13 +1952,13 @@ function setupEventListeners() {
 
   // -------------------------------------------------------------------------
   // [모달 1] ETF 검색 및 매수 등록 창 이벤트
-  // [적용 대상 HTML ID: index.html #modal-buy 관련 버튼 및 인풋]
+  // [적용 대상 코드: index.html L393 #btn-close-buy-modal, L553 #btn-back-to-search, L556 #btn-submit-buy]
   // -------------------------------------------------------------------------
   bindClick('btn-close-buy-modal', closeBuyModal);
   bindClick('btn-back-to-search', () => showBuyStep('search'));
   bindClick('btn-submit-buy', submitBuyHolding);
 
-  // 검색어 입력 시 디바운스(200ms) 검색
+  // 검색어 입력 시 디바운스(200ms) 검색 (index.html L407 #etf-search-input)
   const searchInput = document.getElementById('etf-search-input');
   if (searchInput) {
     searchInput.oninput = (e) => {
@@ -1943,7 +1969,7 @@ function setupEventListeners() {
     };
   }
 
-  bindClick('btn-clear-search', () => {
+  bindClick('btn-clear-search', () => { // index.html L414
     if (searchInput) {
       searchInput.value = '';
       searchETFs('');
@@ -1951,7 +1977,7 @@ function setupEventListeners() {
     }
   });
 
-  // 인기 초성 칩(ㅋㄷㅅ, ㅌㅇㄱ 등) 클릭 시 검색창 자동 반영
+  // 인기 초성 칩(ㅋㄷㅅ, ㅌㅇㄱ 등) 클릭 시 검색창 자동 반영 (index.html L423-L428 .quick-chip)
   document.querySelectorAll('.quick-chip').forEach((chip) => {
     chip.onclick = () => {
       const q = chip.dataset.query;
@@ -1960,7 +1986,7 @@ function setupEventListeners() {
     };
   });
 
-  // 매수가격 및 수량 입력 시 실시간 금액 계산
+  // 매수가격 및 수량 입력 시 실시간 금액 계산 (index.html L497 #input-buy-price, L507 #input-buy-qty)
   const priceInput = document.getElementById('input-buy-price');
   if (priceInput) {
     priceInput.oninput = (e) => {
@@ -1975,7 +2001,7 @@ function setupEventListeners() {
     qtyInput.oninput = updateBuyFormCalculations;
   }
 
-  // 수량 빠른 추가 버튼 (+1, +10, +50, +100)
+  // 수량 빠른 추가 버튼 (+1, +10, +50, +100) (index.html L516-L519 .btn-qty-add)
   document.querySelectorAll('.btn-qty-add').forEach((btn) => {
     btn.onclick = () => {
       const add = parseInt(btn.dataset.add);
@@ -1987,7 +2013,7 @@ function setupEventListeners() {
     };
   });
 
-  // '종가로 입력' 버튼
+  // '종가로 입력' 버튼 (index.html L489 #btn-use-market-price)
   bindClick('btn-use-market-price', () => {
     if (state.selectedETF && priceInput) {
       priceInput.value = formatNumber(state.selectedETF.close_price);
@@ -1997,7 +2023,7 @@ function setupEventListeners() {
 
   // -------------------------------------------------------------------------
   // [모달 2] 보유 종목 상세 모달 내부 버튼 이벤트
-  // [적용 대상 HTML ID: index.html #btn-close-detail, #btn-detail-add-more, #btn-detail-edit, #btn-detail-delete]
+  // [적용 대상 코드: index.html L580 #btn-close-detail, L665 #btn-detail-add-more, L669 #btn-detail-edit, L673 #btn-detail-delete]
   // -------------------------------------------------------------------------
   bindClick('btn-close-detail', closeHoldingDetail);
   bindClick('btn-detail-add-more', () => {
@@ -2022,7 +2048,7 @@ function setupEventListeners() {
 
   // -------------------------------------------------------------------------
   // [모달 3] 보유 정보 직접 수정 모달 버튼 이벤트
-  // [적용 대상 HTML ID: index.html #modal-edit-holding]
+  // [적용 대상 코드: index.html L692 #btn-close-edit-holding, L715 #btn-cancel-edit-holding, L718 #btn-save-edit-holding]
   // -------------------------------------------------------------------------
   bindClick('btn-close-edit-holding', closeEditHoldingModal);
   bindClick('btn-cancel-edit-holding', closeEditHoldingModal);
@@ -2030,7 +2056,7 @@ function setupEventListeners() {
 
   // -------------------------------------------------------------------------
   // [모달 4.5] 계좌 정보 수정 모달 버튼 및 컬러 팔레트 이벤트
-  // [적용 대상 HTML ID: index.html #modal-edit-group]
+  // [적용 대상 코드: index.html L257 #btn-edit-active-group, L811 #btn-close-edit-group, L870 #btn-cancel-edit-group, L873 #btn-save-edit-group]
   // -------------------------------------------------------------------------
   bindClick('btn-edit-active-group', () => {
     if (state.activeGroupId) {
@@ -2043,18 +2069,18 @@ function setupEventListeners() {
   bindClick('btn-cancel-edit-group', closeEditGroupModal);
   bindClick('btn-save-edit-group', saveEditGroup);
 
-  const editColorInput = document.getElementById('edit-group-color');
+  const editColorInput = document.getElementById('edit-group-color'); // index.html L839
   if (editColorInput) {
     editColorInput.oninput = (e) => {
       const c = e.target.value.toUpperCase();
-      const hexEl = document.getElementById('edit-group-color-hex');
-      const dotEl = document.getElementById('edit-group-color-dot');
+      const hexEl = document.getElementById('edit-group-color-hex'); // index.html L840
+      const dotEl = document.getElementById('edit-group-color-dot'); // index.html L808
       if (hexEl) hexEl.textContent = c;
       if (dotEl) dotEl.style.backgroundColor = c;
     };
   }
 
-  // 프리셋 색상 원형 버튼 클릭 이벤트
+  // 프리셋 색상 원형 버튼 클릭 이벤트 (index.html L843-L853 #edit-group-palette)
   document.querySelectorAll('#edit-group-palette button').forEach((btn) => {
     btn.onclick = () => {
       const c = btn.dataset.color;
@@ -2069,33 +2095,33 @@ function setupEventListeners() {
 
   // -------------------------------------------------------------------------
   // [모달 4 & 5] 계좌 추가 및 삭제 확인 다이얼로그 이벤트
-  // [적용 대상 HTML ID: index.html #btn-create-group, #modal-group-delete-guard]
+  // [적용 대상 코드: index.html L788 #btn-create-group, L921 #btn-cancel-group-delete, L906 #btn-confirm-transfer-delete, L914 #btn-confirm-force-delete]
   // -------------------------------------------------------------------------
-  bindClick('btn-create-group', createNewGroup);
-  const newGroupCol = document.getElementById('new-group-color');
+  bindClick('btn-create-group', createNewGroup); // index.html L788
+  const newGroupCol = document.getElementById('new-group-color'); // index.html L781
   if (newGroupCol) {
     newGroupCol.oninput = (e) => {
-      const prev = document.getElementById('color-hex-preview');
+      const prev = document.getElementById('color-hex-preview'); // index.html L782
       if (prev) prev.textContent = e.target.value.toUpperCase();
     };
   }
 
-  bindClick('btn-cancel-group-delete', () => {
-    const guard = document.getElementById('modal-group-delete-guard');
+  bindClick('btn-cancel-group-delete', () => { // index.html L921
+    const guard = document.getElementById('modal-group-delete-guard'); // index.html L887
     if (guard) guard.classList.add('hidden');
     state.deletePendingGroupId = null;
   });
 
-  // 이관 후 삭제 확정
+  // 이관 후 삭제 확정 (index.html L906)
   bindClick('btn-confirm-transfer-delete', () => {
-    const sel = document.getElementById('transfer-target-group-select');
+    const sel = document.getElementById('transfer-target-group-select'); // index.html L903
     const targetGroupId = sel ? sel.value : null;
     if (state.deletePendingGroupId) {
       executeDeleteGroup(state.deletePendingGroupId, targetGroupId, false);
     }
   });
 
-  // 영구 삭제 확정
+  // 영구 삭제 확정 (index.html L914)
   bindClick('btn-confirm-force-delete', () => {
     if (confirm('정말로 이 계좌의 모든 보유 종목과 거래 기록을 영구 삭제하시겠습니까?')) {
       if (state.deletePendingGroupId) {
@@ -2106,18 +2132,18 @@ function setupEventListeners() {
 
   // -------------------------------------------------------------------------
   // [모달 6] 사용자 계정 (User ID) 설정 모달 내부 로직
-  // [적용 대상 HTML ID: index.html #modal-user-settings]
+  // [적용 대상 코드: index.html L927-L1013 #modal-user-settings]
   // -------------------------------------------------------------------------
   async function openUserSettingsModal() {
-    const modal = document.getElementById('modal-user-settings');
+    const modal = document.getElementById('modal-user-settings'); // index.html L932
     if (!modal) return;
     modal.classList.remove('hidden');
 
     const currentId = getUserId();
-    const displayInput = document.getElementById('active-user-id-display');
-    const statusBadge = document.getElementById('active-user-status-badge');
-    const customInput = document.getElementById('input-custom-user-id');
-    const userSelect = document.getElementById('select-registered-users');
+    const displayInput = document.getElementById('active-user-id-display'); // index.html L958
+    const statusBadge = document.getElementById('active-user-status-badge'); // index.html L955
+    const customInput = document.getElementById('input-custom-user-id');     // index.html L986
+    const userSelect = document.getElementById('select-registered-users');   // index.html L997
 
     if (displayInput) displayInput.value = currentId;
     if (customInput) customInput.value = currentId;
@@ -2137,7 +2163,7 @@ function setupEventListeners() {
       if (statusBadge) statusBadge.textContent = '조회 실패';
     }
 
-    // DB에 등록된 계정 목록 드롭다운 채우기
+    // DB에 등록된 계정 목록 드롭다운 채우기 (index.html L997)
     try {
       const users = await apiFetch('/api/v1/users');
       if (userSelect && Array.isArray(users)) {
@@ -2186,16 +2212,16 @@ function setupEventListeners() {
   }
 
   // 사용자 설정 모달 버튼 이벤트 연결
-  const btnOpenUser = document.getElementById('btn-open-user-settings');
+  const btnOpenUser = document.getElementById('btn-open-user-settings'); // index.html L108
   if (btnOpenUser) btnOpenUser.onclick = openUserSettingsModal;
 
-  const btnCloseUser = document.getElementById('btn-close-user-modal');
+  const btnCloseUser = document.getElementById('btn-close-user-modal');   // index.html L946
   if (btnCloseUser) btnCloseUser.onclick = closeUserSettingsModal;
 
-  const btnDoneUser = document.getElementById('btn-done-user-modal');
+  const btnDoneUser = document.getElementById('btn-done-user-modal');     // index.html L1008
   if (btnDoneUser) btnDoneUser.onclick = closeUserSettingsModal;
 
-  // User ID 복사 버튼
+  // User ID 복사 버튼 (index.html L959)
   const btnCopyUser = document.getElementById('btn-copy-user-id');
   if (btnCopyUser) {
     btnCopyUser.onclick = () => {
@@ -2212,13 +2238,13 @@ function setupEventListeners() {
     };
   }
 
-  // 원래 계좌(5계좌/64종목) 원클릭 복원 버튼
+  // 원래 계좌(5계좌/64종목) 원클릭 복원 버튼 (index.html L976)
   const btnRestorePrimary = document.getElementById('btn-restore-primary-user');
   if (btnRestorePrimary) {
     btnRestorePrimary.onclick = () => handleApplyCustomUserId(DEFAULT_PRIMARY_USER_ID);
   }
 
-  // 직접 입력한 User ID 적용 버튼
+  // 직접 입력한 User ID 적용 버튼 (index.html L987)
   const btnApplyCustom = document.getElementById('btn-apply-custom-user-id');
   if (btnApplyCustom) {
     btnApplyCustom.onclick = () => {
@@ -2227,7 +2253,7 @@ function setupEventListeners() {
     };
   }
 
-  const inputCustom = document.getElementById('input-custom-user-id');
+  const inputCustom = document.getElementById('input-custom-user-id'); // index.html L986
   if (inputCustom) {
     inputCustom.onkeydown = (e) => {
       if (e.key === 'Enter') {
@@ -2237,7 +2263,7 @@ function setupEventListeners() {
     };
   }
 
-  // DB 등록 목록에서 선택 변경 버튼
+  // DB 등록 목록에서 선택 변경 버튼 (index.html L1000)
   const btnSwitchSelect = document.getElementById('btn-switch-selected-user');
   if (btnSwitchSelect) {
     btnSwitchSelect.onclick = () => {
