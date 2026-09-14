@@ -10,20 +10,21 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   
-  <!-- Tailwind CSS -->
+  <!-- Tailwind CSS CDN 로드 -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
+    /* Tailwind CSS 커스텀 테마 설정 (KRX 상승/하락 컬러 정의) */
     tailwind.config = {
       darkMode: 'class',
       theme: {
         extend: {
           colors: {
             krx: {
-              red: '#D0374C',
+              red: '#D0374C',       /* KRX 상승(수익) 빨간색 */
               redLight: '#FEE2E2',
-              blue: '#60A5FA',
+              blue: '#60A5FA',      /* KRX 하락(손실) 파란색 */
               blueLight: '#DBEAFE',
-              gray: '#94A3B8'
+              gray: '#94A3B8'       /* 보합(0%) 회색 */
             }
           }
         }
@@ -31,23 +32,59 @@
     }
   </script>
   
-  <!-- Custom CSS -->
+  <!-- 전용 커스텀 스타일시트 (애니메이션, 글꼴 등) -->
   <link rel="stylesheet" href="/css/style.css?v=1.0.20">
   
-  <!-- Lucide Icons -->
+  <!-- Lucide 아이콘 팩 로드 -->
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen antialiased selection:bg-blue-600 selection:text-white">
 
-  <!-- Desktop Backdrop Wrapper -->
+  <!--
+    =============================================================================
+    [화면 전체 레이아웃 구조 안내 (Screen Layout Overview)]
+    -----------------------------------------------------------------------------
+    1. [데스크톱 배경 래퍼 & 모바일 컨테이너] (가운데 정렬 375px~440px 모바일 뷰)
+    2. [상단 네비게이션 헤더] (로고, 종가 기준일자, 사용자ID 버튼, 새로고침, 계좌설정)
+    3. [메인 스크롤 콘텐츠 영역]
+       ├─ (1) 상단 User ID 직접 입력 및 전환 바
+       ├─ (2) 총 평가금액 요약 카드 (총 평가금액, 투자원금, 평가손익, 수익률)
+       ├─ (3) 계좌 탭 메뉴 (전체, 연금저축, IRP, ISA, DC 등) & 계좌 추가 버튼
+       ├─ (4) 계좌별 자산 배분 비중 바 ('전체' 탭 선택 시 노출)
+       ├─ (5) 선택된 단일 계좌 상세 요약 카드 (개별 계좌 탭 선택 시 노출, 위험자산 비율 포함)
+       ├─ (6) 보유 종목 리스트 (정렬 셀렉터, 종목 카드 목록, 빈 상태 안내)
+       └─ (7) 투자 유의사항 및 법적 고지 푸터
+    4. [하단 고정 플로팅 액션바] ('+ ETF 매수 기록하기' 버튼)
+    5. [팝업 모달 & 바텀시트 목록]
+       ├─ [모달 1] ETF 종목 검색 및 매수 등록 창 (#modal-buy)
+       ├─ [모달 2] 보유 종목 상세 정보 및 거래 내역 창 (#modal-holding-detail)
+       ├─ [모달 3] 보유 정보(평단가/수량/메모) 직접 수정 창 (#modal-edit-holding)
+       ├─ [모달 4] 계좌 그룹 관리 및 신규 계좌 추가 창 (#modal-groups)
+       ├─ [모달 4.5] 기존 계좌 정보 수정 창 (#modal-edit-group)
+       ├─ [모달 5] 계좌 삭제 시 종목 이관/삭제 안전 확인창 (#modal-group-delete-guard)
+       └─ [모달 6] 사용자 계정 (User ID) 설정 및 변경 창 (#modal-user-settings)
+    6. [토스트 알림 영역] 상단 팝업 알림 메시지 (#toast-container)
+    =============================================================================
+  -->
+
+  <!-- ========================================================================= -->
+  <!-- 1. 데스크톱 배경 래퍼 (PC 화면에서 앱을 스마트폰 비율로 중앙 배치)           -->
+  <!-- ========================================================================= -->
   <div class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex justify-center items-start">
     
-    <!-- Mobile App Container (375~440px viewport centered) -->
+    <!-- 모바일 앱 본체 프레임 (최대 너비 440px, 스마트폰 화면 크기 유지) -->
     <div class="w-full max-w-[440px] min-h-screen bg-slate-900 border-x border-slate-800 flex flex-col shadow-2xl relative pb-28">
       
-      <!-- Top Navigation Bar -->
+      <!-- ======================================================================= -->
+      <!-- 2. 상단 네비게이션 헤더 (화면 최상단 고정 바)                               -->
+      <!-- 좌측: 서비스 로고 및 타이틀, 기준 일자 배지                                -->
+      <!-- 우측: [User ID 버튼], [시세 새로고침 버튼], [계좌 설정 버튼]                -->
+      <!-- ======================================================================= -->
       <header class="sticky top-0 z-30 bg-slate-900/90 backdrop-blur-md border-b border-slate-800/80 px-4 py-3 flex items-center justify-between">
+        
+        <!-- [좌측] 앱 로고 아이콘 및 타이틀, 시세 기준일 표시 -->
         <div class="flex items-center gap-2">
+          <!-- 로고 아이콘 (상승 그래프 심볼) -->
           <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-md shadow-blue-500/20">
             <i data-lucide="trending-up" class="w-5 h-5 text-white"></i>
           </div>
@@ -55,6 +92,7 @@
             <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-1.5">
               KRX ETF 포트폴리오
             </h1>
+            <!-- 시세 기준일자 배지 (예: 기준: 09/14 종가) -->
             <div class="flex items-center gap-1.5 text-[11px] text-slate-400">
               <span id="header-market-badge" class="inline-flex items-center gap-1 font-medium text-emerald-400">
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -64,64 +102,86 @@
           </div>
         </div>
         
+        <!-- [우측] 상단 빠른 조작 액션 버튼 모음 -->
         <div class="flex items-center gap-1">
-          <!-- User Account Settings button -->
+          <!-- 사용자 계정(User ID) 설정 모달 열기 버튼 -->
           <button id="btn-open-user-settings" class="px-2 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors touch-active flex items-center gap-1.5 text-xs bg-slate-800/80 border border-slate-700/80" title="사용자 계정/ID 설정">
             <i data-lucide="user" class="w-4 h-4 text-blue-400"></i>
             <span id="header-user-short-id" class="font-mono text-[11px] text-slate-300 font-medium">사용자</span>
           </button>
-          <!-- Refresh button -->
+          
+          <!-- KRX 최신 시세 동기화/새로고침 버튼 -->
           <button id="btn-sync-market" class="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors touch-active disabled:opacity-50" title="시세 새로고침">
             <span id="sync-icon-wrapper" class="inline-flex items-center justify-center">
               <i data-lucide="refresh-cw" class="w-5 h-5"></i>
             </span>
           </button>
-          <!-- Group settings button -->
+          
+          <!-- 계좌 그룹 관리 모달 열기 버튼 (톱니바퀴 아이콘) -->
           <button id="btn-open-groups" class="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors touch-active" title="계좌 관리">
             <i data-lucide="settings" class="w-5 h-5"></i>
           </button>
         </div>
       </header>
 
-      <!-- Main Content Scroll Area -->
+      <!-- ======================================================================= -->
+      <!-- 3. 메인 스크롤 콘텐츠 영역 (화면 중앙 전체 내용)                           -->
+      <!-- ======================================================================= -->
       <main class="flex-1 px-4 pt-3 space-y-4">
         
-        <!-- User ID Direct Input / Switcher Bar -->
+        <!-- --------------------------------------------------------------------- -->
+        <!-- [메인 1] User ID 빠른 입력 및 전환 바                                    -->
+        <!-- 화면 위치: 상단 헤더 바로 아래                                         -->
+        <!-- 기능: 원하는 아이디를 입력하고 '조회'를 눌러 즉시 해당 계정으로 전환    -->
+        <!-- --------------------------------------------------------------------- -->
         <div id="user-identity-bar" class="bg-slate-800/70 border border-slate-700/70 rounded-xl p-2.5 flex items-center justify-between gap-2 shadow-md">
           <div class="flex items-center gap-1.5 min-w-0 flex-1">
             <i data-lucide="user" class="w-4 h-4 text-blue-400 flex-shrink-0"></i>
             <span class="text-xs font-semibold text-slate-300 whitespace-nowrap">User ID:</span>
+            <!-- User ID 입력 필드 -->
             <input type="text" id="bar-user-id-input" placeholder="User ID 입력..." class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white font-mono placeholder-slate-500 focus:outline-none focus:border-blue-500">
           </div>
           <div class="flex items-center gap-1.5 flex-shrink-0">
+            <!-- 조회 버튼 -->
             <button id="btn-bar-apply-user" class="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold transition-colors shadow-sm">
               조회
             </button>
+            <!-- 계정 설정 상세 모달 열기 버튼 -->
             <button id="btn-bar-open-user-modal" class="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-700/50 transition-colors" title="계정 관리">
               <i data-lucide="settings-2" class="w-4 h-4"></i>
             </button>
           </div>
         </div>
 
-        <!-- Total Valuation Card -->
+        <!-- --------------------------------------------------------------------- -->
+        <!-- [메인 2] 총 평가금액 요약 대시보드 카드                                 -->
+        <!-- 화면 위치: 메인 상단 대형 요약 카드                                     -->
+        <!-- 표시 내용: 총 평가금액, 투자원금, 평가손익, 총 수익률                     -->
+        <!-- --------------------------------------------------------------------- -->
         <section class="bg-gradient-to-b from-slate-800/90 to-slate-800/40 border border-slate-700/60 rounded-2xl p-5 shadow-lg relative overflow-hidden">
+          <!-- 배경 장식용 은은한 푸른빛 블러 효과 -->
           <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl pointer-events-none"></div>
           
+          <!-- 카드 상단: '총 평가금액' 타이틀 & 상태 뱃지 -->
           <div class="flex justify-between items-start mb-1">
             <span class="text-sm font-medium text-slate-200">총 평가금액</span>
             <span id="card-as-of-badge" class="text-[11px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">종가 확정</span>
           </div>
           
+          <!-- 메인 대형 숫자: 총 평가금액 표시부 (예: ₩ 45,820,000) -->
           <div class="flex items-baseline gap-1 mb-3">
             <span class="text-sm font-semibold text-slate-400">₩</span>
             <span id="total-valuation" class="text-3xl font-extrabold tracking-tight num-tabular text-white">0</span>
           </div>
           
+          <!-- 카드 하단 2열 그리드: 투자원금 및 평가손익(수익률) -->
           <div class="grid grid-cols-2 gap-3 pt-3 border-t border-slate-700/60">
+            <!-- 좌측: 총 투자원금 -->
             <div>
               <span class="text-[13px] text-slate-100 block mb-0.5">투자원금</span>
               <span id="total-invested" class="text-sm font-semibold num-tabular text-slate-200">₩ 0</span>
             </div>
+            <!-- 우측: 총 평가손익 및 수익률 뱃지 (+빨강 / -파랑) -->
             <div class="text-right">
               <span class="text-[13px] text-slate-100 block mb-0.5">평가손익 (수익률)</span>
               <div class="flex items-center justify-end gap-1.5">
@@ -134,40 +194,57 @@
           </div>
         </section>
 
-        <!-- Account Group Filter Tabs -->
+        <!-- --------------------------------------------------------------------- -->
+        <!-- [메인 3] 계좌 그룹 필터 탭 네비게이션                                   -->
+        <!-- 화면 위치: 요약 카드 바로 아래 수평 스크롤 탭 바                        -->
+        <!-- 기능: '전체' 또는 개별 계좌(연금저축, IRP, ISA 등)를 선택하여 필터링     -->
+        <!-- --------------------------------------------------------------------- -->
         <nav class="space-y-2">
+          <!-- 계좌 영역 헤더 및 빠른 계좌 추가 버튼 -->
           <div class="flex items-center justify-between">
             <span class="text-sm font-bold text-slate-200 uppercase tracking-wider">계좌별 포트폴리오</span>
             <button id="btn-quick-add-group" class="text-[12px] text-blue-400 hover:text-blue-300 font-medium flex items-center gap-0.5">
               <i data-lucide="plus" class="w-4 h-4"></i> 계좌 추가
             </button>
           </div>
+          
+          <!-- 수평 스크롤 가능한 탭 버튼 목록 (JS에 의해 동적 렌더링) -->
           <div id="group-tabs-container" class="flex gap-2 overflow-x-auto no-scrollbar py-1 text-xs">
-            <!-- Rendered by JS: 전체, 연금저축, IRP, ISA... -->
+            <!-- 기본 '전체' 탭 (나머지 계좌 버튼들은 JS가 동적 생성) -->
             <button class="px-3 py-1.5 rounded-full bg-blue-600 text-white font-semibold whitespace-nowrap shadow-sm">
               전체
             </button>
           </div>
         </nav>
 
-        <!-- Account Allocation Bar (Visible when '전체' is selected) -->
+        <!-- --------------------------------------------------------------------- -->
+        <!-- [메인 4] 전체 계좌 자산 배분 비중 막대그래프                            -->
+        <!-- 화면 위치: 계좌 탭 아래                                                -->
+        <!-- 표시 조건: '전체' 탭이 선택되어 있을 때만 화면에 표시                    -->
+        <!-- --------------------------------------------------------------------- -->
         <section id="allocation-section" class="bg-slate-800/40 border border-slate-800 rounded-xl p-3.5 space-y-2.5">
+          <!-- 배분 바 타이틀 및 보유 종목 수 -->
           <div class="flex justify-between items-center text-xs">
             <span class="font-medium text-slate-100">자산 배분 비중</span>
             <span id="allocation-total-count" class="text-slate-100 text-[12px]">총 0종목</span>
           </div>
-          <!-- Stacked Progress Bar -->
+          <!-- 여러 계좌가 색상별로 분할되어 채워지는 가로 누적 프로그레스 바 -->
           <div id="allocation-bar" class="w-full h-2.5 bg-slate-700/50 rounded-full overflow-hidden flex">
-            <!-- Segments rendered by JS -->
+            <!-- 각 계좌별 비중 세그먼트 (JS가 너비비율로 동적 삽입) -->
           </div>
-          <!-- Allocation Legend & Mini summary -->
+          <!-- 계좌별 색상 범례(Legend) 및 비중(%) 표시 영역 -->
           <div id="allocation-legend" class="flex flex-wrap gap-2 text-[11px] pt-1">
-            <!-- Rendered by JS -->
+            <!-- 범례 아이템 (JS가 동적 렌더링) -->
           </div>
         </section>
 
-        <!-- Selected Account Single Card (Visible when specific account is active) -->
+        <!-- --------------------------------------------------------------------- -->
+        <!-- [메인 5] 선택된 개별 계좌 상세 요약 카드                                 -->
+        <!-- 화면 위치: 계좌 탭 아래 (자산 배분 바와 같은 위치 교체 노출)             -->
+        <!-- 표시 조건: '전체'가 아닌 특정 계좌(예: 연금저축)를 탭에서 눌렀을 때만 노출 -->
+        <!-- --------------------------------------------------------------------- -->
         <section id="single-account-section" class="hidden bg-slate-800/40 border border-slate-800 rounded-xl p-3.5 space-y-2">
+          <!-- 개별 계좌 타이틀 및 수정 버튼 -->
           <div class="flex justify-between items-center">
             <div class="flex items-center gap-2">
               <span id="single-acc-color-dot" class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
@@ -176,12 +253,15 @@
             </div>
             <div class="flex items-center gap-2">
               <span id="single-acc-weight" class="text-xs font-semibold text-blue-400">비중 0%</span>
+              <!-- 현재 선택된 계좌의 이름/유형/색상 수정 버튼 -->
               <button id="btn-edit-active-group" class="px-2 py-1 rounded-lg bg-slate-750 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors flex items-center gap-1 text-[11px]" title="계좌 정보 수정">
                 <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
                 <span class="text-[10px]">수정</span>
               </button>
             </div>
           </div>
+          
+          <!-- 계좌 단독 4개 항목 요약 그리드: 평가금액, 투자원금, 수익금, 수익률 -->
           <div class="grid grid-cols-4 gap-1.5 pt-2 border-t border-slate-800 text-center">
             <div>
               <span class="text-[12px] text-slate-100 block mb-0.5 whitespace-nowrap">평가금액</span>
@@ -193,39 +273,47 @@
             </div>
             <div>
               <span class="text-[12px] text-slate-100 block mb-0.5 whitespace-nowrap">수익금</span>
-              <span id="single-acc-pnl-amount" class="text-xs text-slate-100 font-bold num-tabular truncate block text-slate-100">₩ 0</span>
+              <span id="single-acc-pnl-amount" class="text-xs text-slate-100 font-bold num-tabular truncate block">₩ 0</span>
             </div>
             <div>
               <span class="text-[12px] text-slate-100 block mb-0.5 whitespace-nowrap">수익률</span>
-              <span id="single-acc-return-rate" class="text-xs text-slate-100 font-bold num-tabular truncate block text-slate-100">0.00%</span>
+              <span id="single-acc-return-rate" class="text-xs text-slate-100 font-bold num-tabular truncate block">0.00%</span>
             </div>
           </div>
 
-          <!-- DC / IRP Risk vs Non-Risk Breakdown Banner -->
+          <!-- 퇴직연금(DC / IRP) 전용: 위험자산 vs 비위험자산 비중 진단 배너 (70% 한도 확인) -->
           <div id="single-acc-risk-breakdown" class="hidden pt-2 border-t border-slate-800 -mx-0.5">
             <div class="risk-breakdown-banner py-2 px-2.5 rounded-lg bg-slate-900/70 border border-slate-750 flex items-center justify-between text-[11.5px] sm:text-[11.5px] font-semibold whitespace-nowrap overflow-x-auto no-scrollbar">
+              <!-- 위험자산 금액 및 비중 (주식형 등) -->
               <span class="text-slate-300 flex items-center gap-1 whitespace-nowrap flex-shrink-0">
                 위험자산 : <strong id="single-acc-risk-amount" class="text-white font-bold text-[11px] sm:text-[11px] num-tabular tracking-tight">0</strong>
                 <span id="single-acc-risk-ratio" class="text-slate-300 font-bold num-tabular tracking-tighter text-[11px] sm:text-xs ml-0.5">(0.00%)</span>
               </span>
               <span class="text-slate-600 px-1 sm:px-1.5 flex-shrink-0 text-xs">|</span>
+              <!-- 안전자산 금액 및 비중 (채권혼합형, 채권 등) -->
               <span class="text-slate-300 flex items-center gap-1 whitespace-nowrap flex-shrink-0">
-                NO위험자산 : <strong id="single-acc-non-risk-amount" class="text-emerald-400 font-bold text-[11px] sm:text-[11x] num-tabular tracking-tight">0</strong>
+                NO위험자산 : <strong id="single-acc-non-risk-amount" class="text-emerald-400 font-bold text-[11px] sm:text-[11px] num-tabular tracking-tight">0</strong>
                 <span id="single-acc-non-risk-ratio" class="text-emerald-400 font-bold num-tabular tracking-tighter text-[11px] sm:text-xs ml-0.5">(0.00%)</span>
               </span>
             </div>
           </div>
         </section>
 
-        <!-- Holdings Section -->
+        <!-- --------------------------------------------------------------------- -->
+        <!-- [메인 6] 보유 종목 리스트 섹션                                         -->
+        <!-- 화면 위치: 계좌 요약 카드 아래 본문                                     -->
+        <!-- 구성: 종목 수 카운트, 정렬 옵션 셀렉터, 개별 ETF 카드 목록, 빈 상태 안내  -->
+        <!-- --------------------------------------------------------------------- -->
         <section class="space-y-3">
+          <!-- 보유 종목 헤더 및 정렬 방식 선택 셀렉트박스 -->
           <div class="flex justify-between items-center">
             <div class="flex items-center gap-1.5">
               <h2 class="text-sm font-bold text-white">보유 종목</h2>
+              <!-- 보유 종목 개수 뱃지 -->
               <span id="holdings-count-badge" class="text-xs px-1.5 py-0.5 rounded-full bg-slate-800 text-slate-400 font-medium">0</span>
             </div>
             
-            <!-- Sort Selector -->
+            <!-- 정렬 드롭다운 메뉴 (사용자 지정순, 평가금액순, 수익률순, 이름순) -->
             <select id="sort-selector" class="bg-slate-800 border border-slate-700 text-slate-300 text-[11px] rounded-lg px-2 py-1 focus:outline-none focus:border-blue-500">
               <option value="custom" selected>사용자 지정순</option>
               <option value="valuation_desc">평가금액순</option>
@@ -235,10 +323,10 @@
             </select>
           </div>
 
-          <!-- Holdings List Container -->
+          <!-- 실제 보유 종목 카드들이 나열되는 동적 컨테이너 (JS가 카드들을 생성) -->
           <div id="holdings-list" class="space-y-2.5"></div>
 
-          <!-- Empty state placeholder -->
+          <!-- 등록된 종목이 하나도 없을 때 표시되는 빈 상태(Empty State) 안내 화면 -->
           <div id="holdings-empty-state" class="hidden py-12 px-4 text-center border border-dashed border-slate-800 rounded-2xl bg-slate-900/50">
             <div class="w-12 h-12 mx-auto rounded-full bg-slate-800/80 flex items-center justify-center text-slate-500 mb-3">
               <i data-lucide="pie-chart" class="w-6 h-6"></i>
@@ -251,7 +339,10 @@
           </div>
         </section>
 
-        <!-- Compliance & Legal Disclaimer Card -->
+        <!-- --------------------------------------------------------------------- -->
+        <!-- [메인 7] 법적 유의사항 및 투자 안내 푸터                                -->
+        <!-- 화면 위치: 스크롤 영역 최하단                                          -->
+        <!-- --------------------------------------------------------------------- -->
         <footer class="pt-4 pb-6">
           <div class="p-3.5 rounded-xl bg-slate-800/20 border border-slate-800/60 text-slate-500 text-[11px] leading-relaxed space-y-1">
             <div class="flex items-center gap-1 font-semibold text-slate-400">
@@ -265,9 +356,14 @@
 
       </main>
 
-      <!-- Sticky Floating Action Bottom Bar -->
+      <!-- ======================================================================= -->
+      <!-- 4. 하단 고정 플로팅 액션바 (화면 하단에 항상 고정되는 매수 버튼)            -->
+      <!-- 화면 위치: 화면 맨 아래 플로팅 버튼                                     -->
+      <!-- 기능: 누르면 매수 기록 바텀시트 모달(#modal-buy)이 열림                 -->
+      <!-- ======================================================================= -->
       <div class="fixed bottom-0 left-0 right-0 z-20 flex justify-center pointer-events-none">
         <div class="w-full max-w-[440px] px-4 pb-4 pt-2 bg-gradient-to-t from-slate-900 via-slate-900/90 to-transparent pointer-events-auto">
+          <!-- 대형 매수 기록 버튼 -->
           <button id="btn-open-buy" class="w-full py-3.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-sm rounded-2xl shadow-xl shadow-blue-600/30 flex items-center justify-center gap-2 transition-all touch-active">
             <i data-lucide="plus-circle" class="w-5 h-5"></i>
             <span>ETF 매수 기록하기</span>
@@ -278,13 +374,19 @@
     </div>
   </div>
 
-  <!-- ================= MODALS & BOTTOM SHEETS ================= -->
+  <!-- ========================================================================= -->
+  <!-- 5. 팝업 모달 & 바텀시트 (MODALS & BOTTOM SHEETS)                          -->
+  <!-- ========================================================================= -->
 
-  <!-- 1. Search & Buy Modal / Bottom Sheet -->
+  <!-- ========================================================================= -->
+  <!-- [모달 1] ETF 검색 및 매수 등록 창 (#modal-buy)                             -->
+  <!-- 화면 형태: 화면 아래에서 위로 올라오는 바텀시트 (Bottom Sheet)              -->
+  <!-- 단계 구성: [Step 1: 종목 검색] -> 종목 선택 -> [Step 2: 매수 금액/수량 입력] -->
+  <!-- ========================================================================= -->
   <div id="modal-buy" class="fixed inset-0 z-50 modal-backdrop flex items-end justify-center hidden">
     <div class="w-full max-w-[440px] max-h-[92vh] bg-slate-900 border-t border-x border-slate-800 rounded-t-3xl shadow-2xl flex flex-col animate-slide-up overflow-hidden">
       
-      <!-- Modal Top Handle & Header -->
+      <!-- 모달 상단 손잡이 바 및 제목/닫기 헤더 -->
       <div class="px-5 pt-3 pb-3 border-b border-slate-800 flex items-center justify-between">
         <div class="w-10 h-1 bg-slate-700 rounded-full mx-auto absolute top-2 left-1/2 -translate-x-1/2"></div>
         <h3 id="buy-modal-title" class="text-base font-bold text-white mt-1">ETF 매수 기록</h3>
@@ -293,9 +395,11 @@
         </button>
       </div>
 
-      <!-- Step 1: Search ETF View -->
+      <!-- ------------------------------------------------------------------- -->
+      <!-- [모달 1 - Step 1] ETF 종목 검색 화면 (검색창, 초성 칩, 검색 결과 리스트) -->
+      <!-- ------------------------------------------------------------------- -->
       <div id="buy-step-search" class="flex-1 flex flex-col p-4 overflow-y-auto space-y-3">
-        <!-- Search Input with Clear Button -->
+        <!-- 검색어 입력창 (종목명, 티커 6자리, 한글 초성 검색 지원) -->
         <div class="relative">
           <i data-lucide="search" class="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
           <input 
@@ -306,12 +410,13 @@
             autocomplete="off"
             autofocus
           >
+          <!-- 검색어 지우기 (X) 버튼 -->
           <button id="btn-clear-search" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white hidden">
             <i data-lucide="x-circle" class="w-5 h-5"></i>
           </button>
         </div>
 
-        <!-- Quick Chosung Chips -->
+        <!-- 빠른 초성 검색 칩 (클릭 시 해당 검색어로 자동 입력) -->
         <div class="space-y-1.5">
           <span class="text-[11px] text-slate-400 font-medium">인기 운용사 브랜드 초성</span>
           <div class="flex flex-wrap gap-1.5">
@@ -324,14 +429,14 @@
           </div>
         </div>
 
-        <!-- Search Results List -->
+        <!-- 실시간 검색 결과 리스트 (JS가 동적으로 결과를 목록에 렌더링) -->
         <div class="flex-1 space-y-2 pt-2">
           <div class="flex justify-between items-center text-xs text-slate-400">
             <span>검색 결과</span>
             <span id="search-result-count">0건</span>
           </div>
           <div id="search-results-list" class="space-y-1.5 max-h-[48vh] overflow-y-auto no-scrollbar pb-6">
-            <!-- Results rendered by JS -->
+            <!-- 기본 안내 문구 (검색어 입력 시 사라짐) -->
             <div class="py-8 text-center text-slate-500 text-xs">
               검색어를 입력하면 실시간으로 KRX ETF가 검색됩니다.
             </div>
@@ -339,9 +444,11 @@
         </div>
       </div>
 
-      <!-- Step 2: Buy Input Form (Hidden initially) -->
+      <!-- ------------------------------------------------------------------- -->
+      <!-- [모달 1 - Step 2] 매수 정보 입력 폼 (종목 선택 후 나타나는 화면)           -->
+      <!-- ------------------------------------------------------------------- -->
       <div id="buy-step-form" class="hidden flex-1 flex flex-col p-4 overflow-y-auto space-y-4">
-        <!-- Selected ETF Card Header -->
+        <!-- 1) 선택된 ETF 요약 카드 (티커, 운용사, 종목명, 기준 종가) -->
         <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-3.5 flex justify-between items-center">
           <div>
             <div class="flex items-center gap-2 mb-0.5">
@@ -356,7 +463,7 @@
           </div>
         </div>
 
-        <!-- Existing Holding Alert Banner (Conditional) -->
+        <!-- 2) 기존 보유 종목인 경우 안내 배너 (가중평균 평단가 합산 알림) -->
         <div id="existing-holding-banner" class="hidden p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs space-y-1">
           <div class="flex items-center gap-1.5 font-bold">
             <i data-lucide="info" class="w-4 h-4 text-amber-400"></i>
@@ -367,15 +474,15 @@
           </p>
         </div>
 
-        <!-- Account Group Selection -->
+        <!-- 3) 매수 계좌 선택 버튼들 (연금저축, IRP 등 그룹 선택) -->
         <div class="space-y-1.5">
           <label class="text-xs font-bold text-slate-300">매수 계좌 선택</label>
           <div id="form-group-pills" class="flex flex-wrap gap-2">
-            <!-- Group buttons rendered by JS -->
+            <!-- 계좌 알약 버튼들이 JS로 동적 생성됨 -->
           </div>
         </div>
 
-        <!-- Purchase Price Input -->
+        <!-- 4) 1주당 매수 가격 입력창 (종가 자동 입력 버튼 포함) -->
         <div class="space-y-1.5">
           <div class="flex justify-between items-center">
             <label for="input-buy-price" class="text-xs font-bold text-slate-300">1주당 매수가격 (원)</label>
@@ -395,7 +502,7 @@
           </div>
         </div>
 
-        <!-- Quantity Input with Quick Add Buttons -->
+        <!-- 5) 매수 수량 입력창 (+1, +10, +50, +100 주 빠른 추가 버튼) -->
         <div class="space-y-1.5">
           <label for="input-buy-qty" class="text-xs font-bold text-slate-300">매수 수량 (주)</label>
           <div class="flex gap-2">
@@ -413,13 +520,13 @@
           </div>
         </div>
 
-        <!-- Total Estimated Amount Display -->
+        <!-- 6) 총 매수 예상 금액 실시간 자동 계산 표시부 (단가 x 수량) -->
         <div class="p-3.5 rounded-xl bg-slate-800/40 border border-slate-800 flex justify-between items-center">
           <span class="text-xs text-slate-400 font-medium">총 매수 예상 금액</span>
           <span id="form-total-calc" class="text-base font-extrabold text-blue-400 num-tabular">₩ 0</span>
         </div>
 
-        <!-- Date & Memo -->
+        <!-- 7) 매수 일자 및 메모 입력 -->
         <div class="grid grid-cols-2 gap-3">
           <div class="space-y-1">
             <label for="input-buy-date" class="text-[11px] font-medium text-slate-400">매수 일자</label>
@@ -441,7 +548,7 @@
           </div>
         </div>
 
-        <!-- Form Actions -->
+        <!-- 8) 이전 단계로 / 매수 등록 완료 버튼 -->
         <div class="flex gap-2 pt-2 pb-4">
           <button id="btn-back-to-search" class="w-1/3 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-colors">
             이전
@@ -455,11 +562,15 @@
     </div>
   </div>
 
-  <!-- 2. Holding Detail & Trade History Bottom Sheet -->
+  <!-- ========================================================================= -->
+  <!-- [모달 2] 보유 종목 상세 정보 및 거래 내역 창 (#modal-holding-detail)        -->
+  <!-- 화면 형태: 보유 종목 클릭 시 올라오는 바텀시트 (Bottom Sheet)                -->
+  <!-- 구성: 종목 시세, 손익 카드, ETF 정보(운용사/보수), 과거 매수 이력, 수정/삭제 버튼 -->
+  <!-- ========================================================================= -->
   <div id="modal-holding-detail" class="fixed inset-0 z-50 modal-backdrop flex items-end justify-center hidden">
     <div class="w-full max-w-[440px] max-h-[90vh] bg-slate-900 border-t border-x border-slate-800 rounded-t-3xl shadow-2xl flex flex-col animate-slide-up overflow-hidden">
       
-      <!-- Top Bar -->
+      <!-- 상단 헤더: 계좌 배지, 종목코드, 닫기 버튼 -->
       <div class="px-5 pt-3 pb-3 border-b border-slate-800 flex items-center justify-between">
         <div class="w-10 h-1 bg-slate-700 rounded-full mx-auto absolute top-2 left-1/2 -translate-x-1/2"></div>
         <div class="flex items-center gap-2 mt-1">
@@ -471,10 +582,10 @@
         </button>
       </div>
 
-      <!-- Detail Body -->
+      <!-- 상세 바디 스크롤 영역 -->
       <div class="flex-1 p-5 overflow-y-auto space-y-5">
         
-        <!-- Header Info -->
+        <!-- 1) 종목명 및 현재가, 전일대비 등락률 -->
         <div>
           <h3 id="detail-name" class="text-lg font-extrabold text-white mb-1">종목명</h3>
           <div class="flex items-center justify-between">
@@ -491,7 +602,7 @@
           </div>
         </div>
 
-        <!-- Profit Summary Card -->
+        <!-- 2) 손익 및 투자 요약 카드 (평가손익, 수익률, 평가금액, 투자원금, 보유수량, 매수평단가) -->
         <div class="bg-slate-800/60 border border-slate-700/80 rounded-2xl p-4 space-y-3">
           <div class="flex justify-between items-center">
             <span class="text-sm text-slate-100">평가손익</span>
@@ -520,7 +631,7 @@
           </div>
         </div>
 
-        <!-- ETF Additional Spec -->
+        <!-- 3) ETF 추가 상품 정보 (운용사, 순자산총액 AUM, 총보수율) -->
         <div class="bg-slate-800/30 border border-slate-800 rounded-xl p-3 text-xs space-y-2">
           <div class="flex justify-between">
             <span class="text-[12px] text-slate-100">운용사</span>
@@ -536,25 +647,29 @@
           </div>
         </div>
 
-        <!-- Trade History List -->
+        <!-- 4) 과거 매수 거래 이력 리스트 (날짜, 매수가, 수량) -->
         <div class="space-y-2">
           <div class="flex justify-between items-center text-xs">
             <span class="font-bold text-slate-300">매수 거래 이력</span>
             <span id="detail-tx-count" class="text-slate-100">0건</span>
           </div>
+          <!-- 과거 거래 목록 (JS가 동적으로 항목 추가) -->
           <div id="detail-tx-list" class="space-y-1.5 max-h-48 overflow-y-auto no-scrollbar">
-            <!-- Transactions rendered by JS -->
+            <!-- 거래 내역 행 렌더링 영역 -->
           </div>
         </div>
 
-        <!-- Action Buttons -->
+        <!-- 5) 하단 조작 버튼 모음: [+ 추가 매수], [수정], [삭제] -->
         <div class="flex gap-2 pt-2 pb-4">
+          <!-- 동일 종목 추가 매수 버튼 -->
           <button id="btn-detail-add-more" class="flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-lg shadow-blue-600/30 transition-colors touch-active">
             + 추가 매수
           </button>
+          <!-- 보유 정보(수량, 평단가) 직접 수정 팝업 열기 -->
           <button id="btn-detail-edit" class="px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition-colors">
             수정
           </button>
+          <!-- 해당 종목 보유 삭제 버튼 -->
           <button id="btn-detail-delete" class="px-4 py-3 rounded-xl bg-red-950/40 hover:bg-red-900/60 border border-red-800/40 text-red-400 font-bold text-xs transition-colors">
             삭제
           </button>
@@ -564,9 +679,14 @@
     </div>
   </div>
 
-  <!-- 3. Edit Holding Modal -->
+  <!-- ========================================================================= -->
+  <!-- [모달 3] 보유 종목 직접 수정 창 (#modal-edit-holding)                      -->
+  <!-- 화면 형태: 화면 정중앙 팝업 모달 다이얼로그                                 -->
+  <!-- 기능: 평단가, 보유수량, 메모를 직접 수정하여 덮어쓰기 저장                   -->
+  <!-- ========================================================================= -->
   <div id="modal-edit-holding" class="fixed inset-0 z-[60] modal-backdrop flex items-center justify-center hidden p-4" style="z-index: 60;">
     <div class="w-full max-w-[380px] bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-5 space-y-4 animate-fade-in">
+      <!-- 팝업 헤더 -->
       <div class="flex justify-between items-center">
         <h3 class="text-base font-bold text-white">보유 정보 직접 수정</h3>
         <button id="btn-close-edit-holding" class="text-slate-400 hover:text-white">
@@ -574,6 +694,7 @@
         </button>
       </div>
 
+      <!-- 입력 필드들: 평단가, 보유수량, 메모 -->
       <div class="space-y-3">
         <div>
           <label class="text-xs font-semibold text-slate-300 block mb-1">수정할 평단가 (원)</label>
@@ -589,6 +710,7 @@
         </div>
       </div>
 
+      <!-- 취소 및 수정 저장 버튼 -->
       <div class="flex gap-2 pt-2">
         <button id="btn-cancel-edit-holding" class="w-1/2 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">
           취소
@@ -600,11 +722,15 @@
     </div>
   </div>
 
-  <!-- 4. Group Management Modal -->
+  <!-- ========================================================================= -->
+  <!-- [모달 4] 계좌 그룹 관리 및 추가 창 (#modal-groups)                          -->
+  <!-- 화면 형태: 화면 아래에서 위로 올라오는 바텀시트                              -->
+  <!-- 구성: 등록된 계좌 목록 조회/수정/삭제, 새 계좌 추가 폼                       -->
+  <!-- ========================================================================= -->
   <div id="modal-groups" class="fixed inset-0 z-50 modal-backdrop flex items-end justify-center hidden">
     <div class="w-full max-w-[440px] max-h-[85vh] bg-slate-900 border-t border-x border-slate-800 rounded-t-3xl shadow-2xl flex flex-col animate-slide-up overflow-hidden">
       
-      <!-- Header -->
+      <!-- 상단 헤더 -->
       <div class="px-5 pt-3 pb-3 border-b border-slate-800 flex items-center justify-between">
         <div class="w-10 h-1 bg-slate-700 rounded-full mx-auto absolute top-2 left-1/2 -translate-x-1/2"></div>
         <h3 class="text-base font-bold text-white mt-1">계좌 그룹 관리</h3>
@@ -613,28 +739,30 @@
         </button>
       </div>
 
-      <!-- Content -->
+      <!-- 모달 내부 콘텐츠 영역 -->
       <div class="flex-1 p-5 overflow-y-auto space-y-4">
         
-        <!-- Group List -->
+        <!-- 1) 현재 등록된 계좌 목록 (클릭하여 개별 계좌 수정 모달 호출) -->
         <div class="space-y-2">
           <div class="flex justify-between items-center">
             <span class="text-xs font-semibold text-slate-400">현재 등록된 계좌</span>
             <span class="text-[10px] text-slate-500">클릭하여 정보 수정</span>
           </div>
-          <div id="groups-list" class="space-y-2">
-            <!-- Rendered by JS -->
-          </div>
+          <!-- 등록된 계좌 카드 목록 (JS로 렌더링) -->
+          <div id="groups-list" class="space-y-2"></div>
         </div>
 
-        <!-- Add Group Form Accordion -->
+        <!-- 2) 새 계좌 추가 입력 폼 (계좌명, 유형, 태그 색상) -->
         <div class="border-t border-slate-800 pt-4 space-y-3">
           <span class="text-xs font-semibold text-white block">+ 새 계좌 추가</span>
           <div class="space-y-2.5">
+            <!-- 계좌 이름 입력 -->
             <div>
               <label class="text-[11px] text-slate-400 block mb-1">계좌명</label>
               <input type="text" id="new-group-name" placeholder="예: 미래에셋 IRP, ISA 중개형" class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-xs focus:outline-none focus:border-blue-500">
             </div>
+            
+            <!-- 계좌 유형 및 태그 색상 피커 2열 그리드 -->
             <div class="grid grid-cols-2 gap-2">
               <div>
                 <label class="text-[11px] text-slate-400 block mb-1">계좌 유형</label>
@@ -655,6 +783,8 @@
                 </div>
               </div>
             </div>
+            
+            <!-- 계좌 추가 완료 버튼 -->
             <button id="btn-create-group" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-md transition-colors">
               계좌 추가하기
             </button>
@@ -665,9 +795,14 @@
     </div>
   </div>
 
-  <!-- 4.5 Edit Group Modal -->
+  <!-- ========================================================================= -->
+  <!-- [모달 4.5] 계좌 정보 수정 창 (#modal-edit-group)                            -->
+  <!-- 화면 형태: 화면 중앙 팝업 다이얼로그                                         -->
+  <!-- 기능: 계좌명 변경, 유형 변경, 테마 색상 팔레트 선택, 보유 종목 현황 확인       -->
+  <!-- ========================================================================= -->
   <div id="modal-edit-group" class="fixed inset-0 z-[60] modal-backdrop flex items-center justify-center hidden p-4" style="z-index: 60;">
     <div class="w-full max-w-[380px] bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-5 space-y-4 animate-fade-in">
+      <!-- 수정 모달 헤더 -->
       <div class="flex justify-between items-center">
         <div class="flex items-center gap-2">
           <span id="edit-group-color-dot" class="w-3.5 h-3.5 rounded-full bg-blue-500"></span>
@@ -678,11 +813,14 @@
         </button>
       </div>
 
+      <!-- 계좌 정보 수정 입력 폼 -->
       <div class="space-y-3">
+        <!-- 계좌명 입력 -->
         <div>
           <label class="text-xs font-semibold text-slate-300 block mb-1">계좌명</label>
           <input type="text" id="edit-group-name" class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500 font-bold" placeholder="계좌명을 입력하세요">
         </div>
+        <!-- 계좌 유형 선택 -->
         <div>
           <label class="text-xs font-semibold text-slate-300 block mb-1">계좌 유형</label>
           <select id="edit-group-type" class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-xs focus:outline-none focus:border-blue-500">
@@ -694,13 +832,14 @@
             <option value="기타">기타</option>
           </select>
         </div>
+        <!-- 계좌 태그 색상 지정 및 프리셋 원형 컬러 팔레트 -->
         <div>
           <label class="text-xs font-semibold text-slate-300 block mb-1">태그 색상</label>
           <div class="flex items-center gap-2 mb-2">
             <input type="color" id="edit-group-color" value="#3B82F6" class="w-8 h-8 rounded-lg bg-transparent border-0 cursor-pointer">
             <span id="edit-group-color-hex" class="text-xs font-mono text-slate-400">#3B82F6</span>
           </div>
-          <!-- Preset Color Palette -->
+          <!-- 빠른 색상 선택을 위한 프리셋 버튼 모음 -->
           <div class="flex items-center gap-2 pt-0.5" id="edit-group-palette">
             <button type="button" class="w-5 h-5 rounded-full border border-white/20 hover:scale-110 transition-transform" style="background-color: #4A90E2" data-color="#4A90E2" title="블루"></button>
             <button type="button" class="w-5 h-5 rounded-full border border-white/20 hover:scale-110 transition-transform" style="background-color: #50E3C2" data-color="#50E3C2" title="민트"></button>
@@ -713,6 +852,7 @@
           </div>
         </div>
 
+        <!-- 현재 계좌에 담긴 종목 수 및 총 평가금액 미니 요약 -->
         <div class="p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/60 text-xs text-slate-400 space-y-1">
           <div class="flex justify-between">
             <span>보유 종목 수</span>
@@ -725,6 +865,7 @@
         </div>
       </div>
 
+      <!-- 취소 및 수정 저장 버튼 -->
       <div class="flex gap-2 pt-2">
         <button id="btn-cancel-edit-group" class="w-1/2 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors">
           취소
@@ -736,9 +877,16 @@
     </div>
   </div>
 
-  <!-- 5. Group Delete Guard Confirmation Dialog -->
+  <!-- ========================================================================= -->
+  <!-- [모달 5] 계좌 삭제 시 종목 이관/삭제 안전 확인창 (#modal-group-delete-guard)   -->
+  <!-- 화면 형태: 화면 중앙 경고 팝업 다이얼로그                                    -->
+  <!-- 기능: 종목이 존재하는 계좌를 삭제할 때 실수 방지를 위한 2가지 처리 옵션 제공    -->
+  <!--       옵션 1: 다른 계좌로 종목 일괄 이관 후 삭제 (권장)                     -->
+  <!--       옵션 2: 계좌 내 종목 및 거래내역 영구 삭제                           -->
+  <!-- ========================================================================= -->
   <div id="modal-group-delete-guard" class="fixed inset-0 z-[60] modal-backdrop flex items-center justify-center hidden p-4" style="z-index: 60;">
     <div class="w-full max-w-[380px] bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-5 space-y-4 animate-fade-in">
+      <!-- 경고 아이콘 및 헤더 -->
       <div class="flex items-center gap-2 text-amber-400">
         <i data-lucide="alert-triangle" class="w-6 h-6"></i>
         <h3 class="text-base font-bold text-white">계좌 삭제 안전 확인</h3>
@@ -749,18 +897,18 @@
       </p>
 
       <div class="space-y-2.5">
-        <!-- Option 1: Migrate holdings to another group -->
+        <!-- 선택지 1: 다른 계좌를 골라 종목들을 옮긴 뒤 계좌만 삭제 -->
         <div class="p-3 rounded-xl bg-slate-800/80 border border-slate-700 space-y-2">
           <label class="text-xs font-bold text-slate-200 block">1. 다른 계좌로 종목 일괄 이관 후 삭제 (권장)</label>
           <select id="transfer-target-group-select" class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white text-xs">
-            <!-- Other groups rendered here -->
+            <!-- 이관 대상 다른 계좌 목록 (JS로 렌더링) -->
           </select>
           <button id="btn-confirm-transfer-delete" class="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg transition-colors">
             이관 후 삭제 진행
           </button>
         </div>
 
-        <!-- Option 2: Force delete holdings -->
+        <!-- 선택지 2: 속한 모든 종목과 거래내역을 함께 영구 삭제 -->
         <div class="p-3 rounded-xl bg-red-950/30 border border-red-900/50 space-y-2">
           <label class="text-xs font-bold text-red-400 block">2. 종목 및 거래내역 전체 영구 삭제</label>
           <button id="btn-confirm-force-delete" class="w-full py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-lg transition-colors">
@@ -769,15 +917,22 @@
         </div>
       </div>
 
+      <!-- 취소 버튼 -->
       <button id="btn-cancel-group-delete" class="w-full py-2 text-slate-400 hover:text-white text-xs font-semibold">
         취소
       </button>
     </div>
   </div>
 
-  <!-- 6. User Account (User ID) Settings Modal -->
+  <!-- ========================================================================= -->
+  <!-- [모달 6] 사용자 계정 (User ID) 설정 및 변경 창 (#modal-user-settings)       -->
+  <!-- 화면 형태: 화면 중앙 모달 팝업                                              -->
+  <!-- 기능: 현재 활성 User ID 확인/복사, 원계좌 원클릭 복원, ID 직접입력, DB계정선택 -->
+  <!-- ========================================================================= -->
   <div id="modal-user-settings" class="fixed inset-0 z-50 modal-backdrop flex items-center justify-center hidden p-4">
     <div class="w-full max-w-[400px] bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-5 space-y-4 animate-fade-in max-h-[90vh] overflow-y-auto">
+      
+      <!-- 계정 설정 모달 헤더 -->
       <div class="flex items-center justify-between pb-3 border-b border-slate-800">
         <div class="flex items-center gap-2">
           <div class="w-8 h-8 rounded-lg bg-blue-600/20 text-blue-400 flex items-center justify-center">
@@ -793,7 +948,7 @@
         </button>
       </div>
 
-      <!-- Current Active User Info Card -->
+      <!-- 1) 현재 활성화된 User ID 확인 및 클립보드 복사 영역 -->
       <div class="p-3.5 rounded-xl bg-slate-800/80 border border-slate-700/80 space-y-2">
         <div class="flex items-center justify-between">
           <span class="text-[11px] font-semibold text-slate-100">현재 활성화된 User ID</span>
@@ -807,7 +962,7 @@
         </div>
       </div>
 
-      <!-- Primary Account Quick Restore Banner -->
+      <!-- 2) 내 원래 등록 계좌 (5계좌 / 64종목) 원클릭 복원 바로가기 배너 -->
       <div class="p-3 rounded-xl bg-gradient-to-r from-blue-950/40 to-indigo-950/40 border border-blue-800/50 space-y-2">
         <div class="flex items-center justify-between">
           <span class="text-xs font-bold text-blue-300 flex items-center gap-1.5">
@@ -823,7 +978,7 @@
         </button>
       </div>
 
-      <!-- Manual Input Section (사용자로부터 직접 입력) -->
+      <!-- 3) 원하는 User ID 직접 입력 전환 영역 -->
       <div class="space-y-2 pt-1 border-t border-slate-800">
         <label class="text-xs font-semibold text-slate-300 block">User ID 직접 입력</label>
         <p class="text-[11px] text-slate-100">기억하기 쉬운 사용자명/아이디를 입력하세요.</p>
@@ -835,7 +990,7 @@
         </div>
       </div>
 
-      <!-- Select From Registered Users in DB -->
+      <!-- 4) DB에 이미 존재하는 계정 목록에서 선택 전환 -->
       <div class="space-y-2 pt-1 border-t border-slate-800">
         <label class="text-xs font-semibold text-slate-300 block">DB 등록 계정에서 선택</label>
         <div class="space-y-2">
@@ -848,6 +1003,7 @@
         </div>
       </div>
 
+      <!-- 닫기 버튼 -->
       <div class="pt-2">
         <button id="btn-done-user-modal" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition-colors">
           닫기
@@ -856,13 +1012,15 @@
     </div>
   </div>
 
-
-  <!-- Toast Notification Container (max-width reduced by 20% to 320px) -->
+  <!-- ========================================================================= -->
+  <!-- 6. 토스트 알림 메시지 컨테이너 (#toast-container)                           -->
+  <!-- 화면 위치: 화면 상단 중앙에 떠오르는 알림 팝업 (성공, 오류, 안내 메시지)     -->
+  <!-- ========================================================================= -->
   <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 z-[100] w-full max-w-[320px] px-3 pointer-events-none space-y-2 flex flex-col items-center" style="z-index: 100;">
-    <!-- Toasts dynamically appended by JS -->
+    <!-- JavaScript에서 동적으로 토스트 알림 메시지가 추가되었다가 서서히 사라짐 -->
   </div>
 
-  <!-- Main Application Logic -->
+  <!-- 메인 프론트엔드 비즈니스 로직 스크립트 파일 연결 -->
   <script src="/js/app.js?v=1.0.20"></script>
 </body>
 </html>
