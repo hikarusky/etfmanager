@@ -264,7 +264,8 @@ function updateUserHeaderDisplay() {
       badge.textContent = '내 계정';
       badge.className = 'font-mono text-[11px] text-emerald-400 font-semibold';
     } else {
-      badge.textContent = uid.substring(0, 6) + '..';
+      const shortText = uid.length > 10 ? uid.substring(0, 8) + '..' : uid;
+      badge.textContent = shortText;
       badge.className = 'font-mono text-[11px] text-blue-400 font-medium';
     }
   }
@@ -339,7 +340,7 @@ async function apiFetch(endpoint, options = {}) {
   const userId = getUserId();
   const headers = {
     'Accept': 'application/json',
-    'X-User-Id': userId,
+    'X-User-Id': encodeURIComponent(userId),
     ...(options.headers || {})
   };
 
@@ -2177,7 +2178,7 @@ function setupEventListeners() {
             : (u.group_count > 0 ? ` - ${u.group_count}계좌/0종목` : ' - 빈 계정');
           const displayLabel = isDef 
             ? `${DEFAULT_PRIMARY_USER_ID}${dataTag}${tag}${currentTag}`
-            : `${u.user_id.length > 12 ? u.user_id.substring(0, 8) + '...' : u.user_id}${dataTag}${tag}${currentTag}`;
+            : `${u.user_id.length > 20 ? u.user_id.substring(0, 18) + '...' : u.user_id}${dataTag}${tag}${currentTag}`;
           return `<option value="${u.user_id}" ${isCurrent ? 'selected' : ''}>${displayLabel}</option>`;
         }).join('');
       }
@@ -2196,15 +2197,19 @@ function setupEventListeners() {
       showToast('User ID를 입력해주세요.', 'warning');
       return;
     }
+    const cleanVal = inputVal.trim();
     try {
       const res = await apiFetch('/api/v1/users/resolve', {
         method: 'POST',
-        body: { input_id: inputVal.trim() }
+        body: { input_id: cleanVal }
       });
       const resolvedId = res.resolved_user_id;
       setUserId(resolvedId);
       closeUserSettingsModal();
-      showToast(`User ID 적용 완료 (${res.group_count}계좌, ${res.holding_count}종목)`, 'success');
+      const msg = res.is_new
+        ? `새 User ID [${resolvedId}] 생성 완료! 기본 5개 계좌가 준비되어 즉시 매수할 수 있습니다.`
+        : `User ID [${resolvedId}] 전환 완료 (${res.group_count}계좌, ${res.holding_count}종목)`;
+      showToast(msg, 'success');
       await loadDashboard();
     } catch (err) {
       showToast(`User ID 적용 실패: ${err.message}`, 'error');
