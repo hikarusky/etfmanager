@@ -5,7 +5,12 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.api.deps import DEFAULT_USER_ID, get_current_user_id, resolve_user_uuid
+from src.api.deps import (
+    DEFAULT_USER_ID,
+    ensure_user_with_default_groups,
+    get_current_user_id,
+    resolve_user_id,
+)
 from src.core.database import get_db
 from src.models import Holding, PortfolioGroup, User
 
@@ -36,7 +41,7 @@ class UserResolveResponse(BaseModel):
 @router.get("", response_model=list[UserItem])
 async def list_users(
     include_empty: bool = Query(False, description="Whether to include empty accounts without groups and holdings"),
-    current_user_id: uuid.UUID = Depends(get_current_user_id),
+    current_user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -84,7 +89,7 @@ async def list_users(
 
 @router.get("/me", response_model=UserItem)
 async def get_current_user(
-    current_user_id: uuid.UUID = Depends(get_current_user_id),
+    current_user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -116,21 +121,14 @@ async def resolve_user_id_endpoint(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Validate or transform user input into a deterministic user_id UUID,
+    Validate user input into a persistent user_id without forcing UUID conversion,
+    ensure 5 default account groups exist for instant ETF purchase,
     and return portfolio holding information for that user.
     """
-    target_id = resolve_user_uuid(req.input_id)
+    target_id = resolve_user_id(req.input_id)
 
-    # Check if user exists
-    u_stmt = select(User).where(User.user_id == target_id)
-    user = (await db.execute(u_stmt)).scalars().first()
-
-    is_new = False
-    if not user:
-        user = User(user_id=target_id, device_id="custom_user")
-        db.add(user)
-        await db.commit()
-        is_new = True
+    # Ensure user exists and has default account groups created
+    user, is_new = await ensure_user_with_default_groups(db, target_id)
 
     g_cnt_stmt = select(func.count(PortfolioGroup.group_id)).where(PortfolioGroup.user_id == target_id)
     g_cnt = (await db.execute(g_cnt_stmt)).scalar() or 0
@@ -144,3 +142,4 @@ async def resolve_user_id_endpoint(
         holding_count=h_cnt,
         is_new=is_new,
     )
+
