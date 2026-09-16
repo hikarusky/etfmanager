@@ -151,7 +151,7 @@ def format_holding_name(
 ) -> str:
     """
     Format holding name according to account type rules.
-    In retirement accounts (DC, IRP), ETFs containing 'TDF' or '채권' are non-risk assets (비위험자산/안전자산),
+    In retirement accounts (DC, IRP), ETFs containing 'TDF', '채권', '국채', or '미국채' are non-risk assets (비위험자산/안전자산),
     so append '(NO위험자산)' to the display name.
     """
     if not raw_name:
@@ -165,7 +165,13 @@ def format_holding_name(
 
     if is_applicable:
         raw_upper = raw_name.upper()
-        if ("TDF" in raw_upper or "채권" in raw_name) and "(NO위험자산)" not in raw_name:
+        is_non_risk = (
+            "TDF" in raw_upper
+            or "채권" in raw_name
+            or "국채" in raw_name
+            or "미국채" in raw_name
+        )
+        if is_non_risk and "(NO위험자산)" not in raw_name:
             return f"{raw_name}(NO위험자산)"
 
     return raw_name
