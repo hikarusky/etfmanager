@@ -9,7 +9,7 @@
  *    - state: 앱 전체 데이터 상태 관리
  *    - formatWon, formatPnlWon, formatPercent, getPnlClass:
  *      [적용: index.html 전역 금액 및 수익률/등락률 텍스트 서식화]
- *    - formatHoldingDisplayName: DC/IRP 계좌 내 채권/TDF에 '(NO위험자산)' 라벨 자동 부여
+ *    - formatHoldingDisplayName: DC/IRP 계좌 내 채권/국채/미국채/TDF에 '(NO위험자산)' 라벨 자동 부여
  *    - showToast:
  *      [적용: index.html L1015-L1021 #toast-container] 화면 상단 토스트 알림 메시지 팝업
  * 
@@ -174,7 +174,8 @@ function formatHoldingDisplayName(nameKr, groupName, accountType) {
                        (groupName && (groupName.toUpperCase().includes('DC') || groupName.toUpperCase().includes('IRP')));
   if (isRetirement) {
     const upper = nameKr.toUpperCase();
-    if ((upper.includes('TDF') || nameKr.includes('채권')) && !nameKr.includes('(NO위험자산)')) {
+    const isNonRisk = upper.includes('TDF') || nameKr.includes('채권') || nameKr.includes('국채') || nameKr.includes('미국채');
+    if (isNonRisk && !nameKr.includes('(NO위험자산)')) {
       return `${nameKr}(NO위험자산)`;
     }
   }
@@ -898,7 +899,8 @@ function renderAllocationOrAccountCard() {
             const v = parseFloat(h.valuation_amount || 0);
             const name = h.name_kr || '';
             const isNonRisk = name.includes('(NO위험자산)') || name.includes('NO위험자산') ||
-                              name.toUpperCase().includes('TDF') || name.includes('채권');
+                              name.toUpperCase().includes('TDF') || name.includes('채권') ||
+                              name.includes('국채') || name.includes('미국채');
             if (isNonRisk) {
               nonRiskVal += v;
             } else {
