@@ -47,7 +47,7 @@
     1. [데스크톱 배경 래퍼 & 모바일 컨테이너] (가운데 정렬 375px~440px 모바일 뷰)
     2. [상단 네비게이션 헤더] (로고, 종가 기준일자, 사용자ID 버튼, 새로고침, 계좌설정)
     3. [메인 스크롤 콘텐츠 영역]
-       ├─ (1) 상단 User ID 직접 입력 및 전환 바
+       ├─ (1) 상단 User ID 선택 및 전환 바
        ├─ (2) 총 평가금액 요약 카드 (총 평가금액, 투자원금, 평가손익, 수익률)
        ├─ (3) 계좌 탭 메뉴 (전체, 연금저축, IRP, ISA, DC 등) & 계좌 추가 버튼
        ├─ (4) 계좌별 자산 배분 비중 바 ('전체' 탭 선택 시 노출)
@@ -130,24 +130,26 @@
       <main class="flex-1 px-4 pt-3 space-y-4">
         
         <!-- --------------------------------------------------------------------- -->
-        <!-- [메인 1] User ID 빠른 입력 및 전환 바                                    -->
+        <!-- [메인 1] User ID 선택 및 빠른 전환 바                                     -->
         <!-- 화면 위치: 상단 헤더 바로 아래                                         -->
-        <!-- 기능: 원하는 아이디를 입력하고 '조회'를 눌러 즉시 해당 계정으로 전환    -->
+        <!-- 기능: 등록된 User ID 목록에서 선택 시 해당 계정의 계좌와 포트폴리오 즉시 조회 -->
         <!-- --------------------------------------------------------------------- -->
         <div id="user-identity-bar" class="bg-slate-800/70 border border-slate-700/70 rounded-xl p-2.5 flex items-center justify-between gap-2 shadow-md">
           <div class="flex items-center gap-1.5 min-w-0 flex-1">
             <i data-lucide="user" class="w-4 h-4 text-blue-400 flex-shrink-0"></i>
             <span class="text-xs font-semibold text-slate-300 whitespace-nowrap">User ID:</span>
-            <!-- User ID 입력 필드 -->
-            <input type="text" id="bar-user-id-input" placeholder="User ID 입력..." class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white font-mono placeholder-slate-500 focus:outline-none focus:border-blue-500">
+            <!-- User ID 선택 드롭다운 (등록된 사용자 목록) -->
+            <select id="bar-user-id-select" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white font-mono focus:outline-none focus:border-blue-500 cursor-pointer truncate">
+              <option value="">User ID 목록 조회 중...</option>
+            </select>
           </div>
           <div class="flex items-center gap-1.5 flex-shrink-0">
             <!-- 조회 버튼 -->
-            <button id="btn-bar-apply-user" class="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold transition-colors shadow-sm">
+            <button id="btn-bar-apply-user" class="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold transition-colors shadow-sm whitespace-nowrap">
               조회
             </button>
-            <!-- 계정 설정 상세 모달 열기 버튼 -->
-            <button id="btn-bar-open-user-modal" class="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-700/50 transition-colors" title="계정 관리">
+            <!-- 계정 설정 상세 모달 열기 버튼 (신규 계정 추가 및 계정 관리) -->
+            <button id="btn-bar-open-user-modal" class="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-700/50 transition-colors" title="계정 관리 및 새 계정 생성">
               <i data-lucide="settings-2" class="w-4 h-4"></i>
             </button>
           </div>
