@@ -2460,7 +2460,7 @@ if ('serviceWorker' in navigator) {
 if ('caches' in window) {
   caches.keys().then((keys) => {
     keys.forEach((key) => {
-      if (key !== 'etf-portfolio-cache-v15') {
+      if (key !== 'etf-portfolio-cache-v16') {
         caches.delete(key);
       }
     });
