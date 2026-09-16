@@ -19,7 +19,7 @@ router = APIRouter(prefix="/holdings", tags=["Holdings"])
 @router.post("", response_model=HoldingResponse, status_code=status.HTTP_201_CREATED)
 async def create_or_merge_holding(
     data: HoldingCreateRequest,
-    user_id: uuid.UUID = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -40,7 +40,7 @@ async def create_or_merge_holding(
 @router.put("/reorder", response_model=dict)
 async def reorder_holdings(
     data: HoldingReorderRequest,
-    user_id: uuid.UUID = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     """보유 종목 드래그 앤 드롭 표시 순서 일괄 저장."""
@@ -56,7 +56,7 @@ async def reorder_holdings(
 @router.get("/{holding_id}", response_model=HoldingResponse)
 async def get_holding(
     holding_id: uuid.UUID,
-    user_id: uuid.UUID = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     """보유 종목 상세 및 거래 이력 조회 (PRD F-03)."""
@@ -73,7 +73,7 @@ async def get_holding(
 async def update_holding(
     holding_id: uuid.UUID,
     data: HoldingUpdateRequest,
-    user_id: uuid.UUID = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     """보유 수량, 평단가, 메모 수정 또는 타 그룹 이동 (PRD F-02, F-05)."""
@@ -90,7 +90,7 @@ async def update_holding(
 @router.delete("/{holding_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_holding(
     holding_id: uuid.UUID,
-    user_id: uuid.UUID = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     """보유 종목 삭제 (거래 이력 함께 삭제)."""
