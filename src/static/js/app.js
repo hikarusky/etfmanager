@@ -2373,6 +2373,40 @@ function setupEventListeners() {
     };
   }
 
+  // DB 등록 목록에서 선택 계정 삭제 버튼 (index.html L1006)
+  const btnDeleteSelect = document.getElementById('btn-delete-selected-user');
+  if (btnDeleteSelect) {
+    btnDeleteSelect.onclick = async () => {
+      const val = document.getElementById('select-registered-users').value;
+      if (!val) {
+        showToast('삭제할 계정을 선택해주세요.', 'warning');
+        return;
+      }
+      if (val === DEFAULT_PRIMARY_USER_ID) {
+        showToast('기본 사용자 계정은 삭제할 수 없습니다.', 'warning');
+        return;
+      }
+      if (!confirm(`User ID [${val}] 계정과 연결된 모든 계좌/종목이 영구 삭제됩니다.\n정말 삭제하시겠습니까?`)) {
+        return;
+      }
+      try {
+        await apiFetch(`/api/v1/users/${encodeURIComponent(val)}`, {
+          method: 'DELETE'
+        });
+        showToast(`User ID [${val}] 계정이 삭제되었습니다.`, 'success');
+
+        // 현재 사용 중인 계정을 삭제한 경우 기본 계정으로 자동 전환
+        if (getUserId() === val) {
+          await switchUser(DEFAULT_PRIMARY_USER_ID);
+        } else {
+          await loadRegisteredUsers();
+        }
+      } catch (err) {
+        showToast(`계정 삭제 실패: ${err.message}`, 'error');
+      }
+    };
+  }
+
   // -------------------------------------------------------------------------
   // [공통 모달 닫기] 모달 바깥 어두운 배경(backdrop) 클릭 시 닫기 처리
   // -------------------------------------------------------------------------
