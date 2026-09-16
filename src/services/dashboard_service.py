@@ -184,6 +184,8 @@ class DashboardService:
                         "(NO위험자산)" in name
                         or "TDF" in name.upper()
                         or "채권" in name
+                        or "국채" in name
+                        or "미국채" in name
                     )
                     if is_non_risk:
                         nr_sum += it.valuation_amount
