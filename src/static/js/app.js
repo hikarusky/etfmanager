@@ -464,6 +464,22 @@ async function loadDashboard(isRetry = false) {
     removeDashboardErrorBanner();
     state.dashboard = data;
     state.groups = data.groups || [];
+
+    // 계좌 선택 상태 자동 보정:
+    // 현재 activeGroupId가 state.groups에 유효하게 존재하는지 확인
+    const currentGroupValid = state.activeGroupId && state.groups.some((g) => g.group_id === state.activeGroupId);
+    if (!currentGroupValid) {
+      // 1순위: 보유 종목이 존재하는 첫 번째 계좌(예: myetf의 '연금저축')를 자동 선택
+      const groupWithHoldings = state.groups.find((g) => (g.holdings || []).length > 0);
+      if (groupWithHoldings) {
+        state.activeGroupId = groupWithHoldings.group_id;
+      } else {
+        // 2순위: 보유 종목이 없다면 '연금저축' 계좌 또는 첫 번째 계좌 선택
+        const pensionGroup = state.groups.find((g) => g.name && g.name.includes('연금'));
+        state.activeGroupId = pensionGroup ? pensionGroup.group_id : (state.groups[0]?.group_id || null);
+      }
+    }
+
     renderApp();
     if (isRetry) {
       showToast('대시보드 데이터를 성공적으로 불러왔습니다.', 'success');
@@ -741,11 +757,17 @@ function renderAllocationOrAccountCard() {
     // =======================================================================
     // [메인 5] 선택된 단일 계좌 상세 요약 카드 렌더링 (index.html L241-L300)
     // =======================================================================
+    const grp = state.groups.find((g) => g.group_id === state.activeGroupId);
+    if (!grp) {
+      // 선택된 계좌가 현재 사용자 그룹에 없으면 이전 DOM(예: 이전 사용자의 DC계좌)이 남지 않도록 전체 뷰로 폴백
+      state.activeGroupId = null;
+      allocationSection.classList.remove('hidden');
+      singleAccountSection.classList.add('hidden');
+      return;
+    }
+
     allocationSection.classList.add('hidden');
     singleAccountSection.classList.remove('hidden');
-
-    const grp = state.groups.find((g) => g.group_id === state.activeGroupId);
-    if (!grp) return;
 
     // 계좌명, 유형, 태그 색상, 비중 (index.html L250-L255)
     document.getElementById('single-acc-name').textContent = grp.name;
@@ -2205,6 +2227,7 @@ function setupEventListeners() {
       });
       const resolvedId = res.resolved_user_id;
       setUserId(resolvedId);
+      state.activeGroupId = null; // 계정 전환 시 이전 사용자의 계좌 선택을 초기화
       closeUserSettingsModal();
       const msg = res.is_new
         ? `새 User ID [${resolvedId}] 생성 완료! 기본 5개 계좌가 준비되어 즉시 매수할 수 있습니다.`
