@@ -21,7 +21,7 @@ router = APIRouter(prefix="/groups", tags=["Groups"])
 
 @router.get("", response_model=list[GroupResponse])
 async def list_groups(
-    user_id: uuid.UUID = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     """사용자의 계좌 그룹 목록 및 소속 종목 수 조회 (PRD F-05)."""
@@ -31,7 +31,7 @@ async def list_groups(
 @router.post("", response_model=GroupResponse, status_code=status.HTTP_201_CREATED)
 async def create_group(
     data: GroupCreateRequest,
-    user_id: uuid.UUID = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     """신규 계좌 그룹 생성 (PRD F-05)."""
@@ -54,7 +54,7 @@ async def create_group(
 @router.get("/{group_id}", response_model=GroupResponse)
 async def get_group(
     group_id: str,
-    user_id: uuid.UUID = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     """단일 계좌 그룹 조회."""
@@ -79,7 +79,7 @@ async def get_group(
 async def update_group(
     group_id: str,
     data: GroupUpdateRequest,
-    user_id: uuid.UUID = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     """계좌 그룹 정보 수정 (이름, 색상, 정렬 순서)."""
@@ -110,7 +110,7 @@ async def delete_group(
     target_group_id: str | None = Query(None, description="보유 종목을 이관할 대상 그룹 ID"),
     force_delete_holdings: bool = Query(False, description="하위 호환용 파라미터"),
     transfer_to_group_id: str | None = Query(None, description="하위 호환용 파라미터"),
-    user_id: uuid.UUID = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     """
