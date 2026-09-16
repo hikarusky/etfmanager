@@ -31,7 +31,7 @@
 ┌─────────────────────────────────────────────────────────────┐
 │ [헤더] KRX ETF 포트폴리오 | 기준: 09/14 종가 | [계정][새로고침][설정]│
 ├─────────────────────────────────────────────────────────────┤
-│ [User ID 빠른 전환 바] User ID: [ hikarusky ] [조회] [⚙]     │
+│ [User ID 빠른 전환 바] User ID: [ hikarusky (5계좌/66종목) ▼] [조회] [⚙]│
 ├─────────────────────────────────────────────────────────────┤
 │ [총 평가금액 요약 카드]                                      │
 │  총 평가금액: ₩ 45,820,000  (종가 확정)                     │
@@ -65,8 +65,8 @@
 
 | 영역 | 기능 및 UI 요소 | `index.html` 코드 라인 | `app.js` 담당 함수 및 라인 |
 |---|---|---|---|
-| **상단 헤더** | • 기준일자 종가 배지 (`#header-market-badge`, `#header-base-date`)<br>• 시세 새로고침 버튼 (`#btn-sync-market`, `#sync-icon-wrapper`)<br>• 사용자 ID 뱃지 (`#header-user-short-id`) | L97-L100<br>L114-L118<br>L108-L111 | `renderHeader() L420-L439`<br>`syncMarketPrices() L378-L405`<br>`updateUserHeaderDisplay() L133-L150` |
-| **User ID 바** | • 등록된 User ID 드롭다운 선택창 (`#bar-user-id-select`)<br>• 조회 버튼 (`#btn-bar-apply-user`) | L132-L156 (선택창: L142, 버튼: L148) | `loadRegisteredUsers()`, `switchUser()` |
+| **상단 헤더** | • 기준일자 종가 배지 (`#header-market-badge`, `#header-base-date`)<br>• 시세 새로고침 버튼 (`#btn-sync-market`, `#sync-icon-wrapper`)<br>• 사용자 ID 뱃지 (`#header-user-short-id`) | L97-L100<br>L114-L118<br>L108-L111 | `renderHeader() L420-L439`<br>`syncMarketPrices() L378-L405`<br>`updateUserHeaderDisplay() L259-L285` |
+| **User ID 바** | • 등록된 User ID 드롭다운 선택창 (`#bar-user-id-select`)<br>• 조회 버튼 (`#btn-bar-apply-user`) | L132-L156 (선택창: L142, 버튼: L148) | `loadRegisteredUsers() L287-L334`<br>`switchUser() L336-L364` |
 | **총 평가금액 카드** | • 총 평가금액 (`#total-valuation`)<br>• 투자원금 (`#total-invested`)<br>• 평가손익 및 수익률 (`#total-pnl`, `#total-return-badge`) | L156-L195<br>(L174, L182, L188, L189) | `renderSummaryCard() L441-L466` |
 | **계좌 탭 바** | • '전체' 및 개별 계좌 필터 탭 (`#group-tabs-container`)<br>• 빠른 계좌 추가 버튼 (`#btn-quick-add-group`) | L197-L218<br>(컨테이너: L212, 버튼: L206) | `renderGroupTabs() L468-L508` |
 | **자산 배분 바** | • '전체' 탭 선택 시 가로 누적 비중 막대 (`#allocation-section`, `#allocation-bar`, `#allocation-legend`) | L220-L239<br>(막대: L232, 범례: L236) | `renderAllocationOrAccountCard() L514-L556` |
@@ -78,7 +78,7 @@
 | **[모달 3] 종목 수정** | • 평단가, 수량, 메모 직접 수정 (`#edit-avg-price`, `#edit-quantity`) | L682-L723<br>(평단가: L701, 수량: L705) | `saveEditHolding() L1242-L1277` |
 | **[모달 4, 4.5] 계좌 관리** | • 계좌 목록 및 신규 계좌 추가 (`#groups-list`, `#btn-create-group`)<br>• 계좌명/유형 및 8가지 컬러 팔레트 수정 (`#edit-group-palette`) | L725-L796 (목록: L752, 추가: L788)<br>L798-L878 (이름: L821, 색상: L843) | `renderGroupsList() L1412-L1463`<br>`createNewGroup() L1465-L1496`<br>`saveEditGroup() L1352-L1399` |
 | **[모달 5] 삭제 확인** | • 계좌 삭제 안전 다이얼로그 (다른 계좌로 이관 후 삭제 or 영구 삭제) | L880-L925<br>(이관삭제: L906, 강제삭제: L914) | `handleDeleteGroupClick() L1498-L1524`<br>`executeDeleteGroup() L1526-L1555` |
-| **[모달 6] 계정 설정** | • 내 원래 계좌(5개/64종목) 즉시 복원 (`#btn-restore-primary-user`)<br>• User ID 직접 입력 전환 및 DB 계정 선택 | L927-L1013<br>(원클릭복원: L976, ID입력: L986, 선택: L997) | `openUserSettingsModal() L1792-L1842`<br>`handleApplyCustomUserId() L1849-L1867` |
+| **[모달 6] 계정 설정** | • 내 원래 계좌(5개/64종목) 즉시 복원 (`#btn-restore-primary-user`)<br>• User ID 직접 입력 전환 및 DB 계정 선택<br>• 선택한 계정 영구 삭제 (`#btn-delete-selected-user`) | L932-L1020<br>(원클릭복원: L978, ID입력: L988, 선택: L999, 삭제: L1006) | `openUserSettingsModal() L2247-L2285`<br>`handleApplyCustomUserId() L2289-L2311`<br>`btnDeleteSelect L2379-L2413` |
 | **토스트 알림** | • 상단 팝업 알림 메시지 카드 (`#toast-container`) | L1015-L1021 | `showToast() L78-L110` |
 
 ---
@@ -113,13 +113,13 @@
   - 선택창(드롭다운): `L142` (`#bar-user-id-select`)
   - 조회 버튼: `L148` (`#btn-bar-apply-user`)
   - 계정 관리 버튼: `L152` (`#btn-bar-open-user-modal`)
-- **담당 JS 코드**: `app.js` (`loadRegisteredUsers()`, `switchUser()`, `openUserSettingsModal()`)
+- **담당 JS 코드**: `app.js L287-L334` (`loadRegisteredUsers()`), `L336-L364` (`switchUser()`), `L2247-L2285` (`openUserSettingsModal()`)
 
 #### 주요 기능
-- DB 테이블에 등록된 모든 User ID 목록을 드롭다운(`select`)으로 불러와 계좌수 및 보유종목수와 함께 표시합니다.
-- 원하는 User ID를 선택하면 즉시 `switchUser()`가 실행되어 해당 사용자의 계좌 목록과 포트폴리오를 화면에 조회합니다.
+- DB 테이블에 등록된 모든 User ID 목록을 드롭다운(`select`)으로 자동 조회하여 각 계정의 계좌수 및 보유종목수(예: `hikarusky (5계좌 / 66종목) ★[기본]`)와 함께 나열합니다.
+- 사용자가 드롭다운에서 특정 계정을 선택(`onchange`)하면 즉시 `switchUser()`가 실행되어 활성 사용자를 변경하고, 해당 사용자가 보유한 계좌 목록과 포트폴리오를 화면에 새로 조회합니다.
 - **[조회]** 버튼 클릭 시에도 현재 선택된 User ID의 데이터를 즉시 새로고침합니다.
-- 우측 설정 아이콘(`⚙`)을 누르면 신규 계정 생성 및 세부 설정을 할 수 있는 계정 상세 모달([모달 6])이 열립니다.
+- 우측 설정 아이콘(`⚙`)을 누르면 신규 계정 생성, 계정 삭제 및 세부 설정을 할 수 있는 계정 상세 모달([모달 6])이 열립니다.
 
 ---
 
@@ -181,7 +181,8 @@
   - 해당 계좌만의 평가금액, 투자원금, 수익금, 수익률을 4열 그리드로 요약합니다.
   - **퇴직연금(DC / IRP) 계좌 전용 위험자산 진단 배너**:
     - 퇴직연금 계좌는 법적으로 주식형 등 위험자산을 최대 70%까지만 담을 수 있습니다.
-    - 종목명에 채권, 국채, 미국채, TDF가 포함된 종목을 자동으로 'NO위험자산'으로 판별하고, **위험자산 비중(%)과 안전자산 비중(%)**을 실시간 계산하여 배너에 표시합니다.
+    - 종목명에 **채권, 국채, 미국채, TDF**가 포함된 종목(예: `ACE 미국30년국채액티브`, `TIGER 미국S&P500미국채혼합50`, `TIGER 미국채10년선물`, `RISE TDF2050액티브 적격`, `KODEX 종합채권` 등)을 자동으로 'NO위험자산(안전자산)'으로 판별합니다.
+    - **위험자산 비중(%)과 안전자산 비중(%)**을 실시간 계산하여 배너에 표시하므로 70% 한도 초과 여부를 한눈에 점검할 수 있습니다.
   - 우측의 `수정` 버튼을 누르면 계좌명 및 색상을 즉시 변경할 수 있습니다.
 
 ---
@@ -285,13 +286,16 @@
 ---
 
 ### 5.6 [모달 6] 사용자 계정(User ID) 설정 창 (`#modal-user-settings`)
-- **HTML 코드 위치**: `index.html L927-L1013`
-- **담당 JS 코드**: `app.js L1792-L1867` (`openUserSettingsModal()`, `handleApplyCustomUserId()`)
+- **HTML 코드 위치**: `index.html L932-L1020`
+- **담당 JS 코드**: `app.js L2247-L2285` (`openUserSettingsModal()`), `L2289-L2311` (`handleApplyCustomUserId()`), `L2379-L2413` (`btnDeleteSelect`)
 - **주요 기능**:
   1. 현재 활성 ID 확인 & 복사: `L958 #active-user-id-display`, `L959 #btn-copy-user-id`
-  2. **내 원래 등록 계좌(5계좌/64종목) 원클릭 복원**: `L976 #btn-restore-primary-user`
-  3. User ID 직접 입력 전환: `L986 #input-custom-user-id`, `L987 #btn-apply-custom-user-id`
-  4. DB 등록 계정 선택 드롭다운: `L997 #select-registered-users`, `L1000 #btn-switch-selected-user`
+  2. **내 원래 등록 계좌(5계좌/64종목) 원클릭 복원**: `L978 #btn-restore-primary-user`
+  3. User ID 직접 입력 전환: `L988 #input-custom-user-id`, `L989 #btn-apply-custom-user-id` (신규 ID 입력 시 기본 5개 계좌 자동 준비)
+  4. DB 등록 계정 선택 드롭다운: `L999 #select-registered-users`, `L1003 #btn-switch-selected-user` (선택 시 해당 계정으로 즉시 전환)
+  5. **선택한 계정 영구 삭제**: `L1006 #btn-delete-selected-user`
+     - 드롭다운에서 선택한 불필요한 User ID를 백엔드 `DELETE /api/v1/users/{user_id}` API로 삭제합니다.
+     - 안전장치: 기본 계정(`hikarusky`)은 삭제가 금지되어 있으며, 현재 사용 중인 계정을 삭제한 경우 기본 계정으로 자동 복귀합니다.
 
 ---
 
@@ -305,6 +309,7 @@
 | **평가손익** | $\text{평가금액} - \text{투자원금}$ | 수익(+): 빨간색 (`#D0374C`)<br>손실(-): 파란색 (`#60A5FA`) |
 | **수익률(%)** | $\frac{\text{평가손익}}{\text{투자원금}} \times 100$ | 소수점 둘째 자리 반올림 |
 | **종가 기준 시점** | • 평일 18:00 이전 또는 휴일: **직전 영업일 종가**<br>• 평일 18:00 이후: **당일 확정 종가** | 한국거래소(KRX) 공식 마감 기준 |
+| **퇴직연금 위험자산 / NO위험자산 판정** | • 종목명에 `'채권'`, `'국채'`, `'미국채'`, `'TDF'`가 포함된 경우: **`NO위험자산(안전자산)`**으로 자동 판정 및 종목명 뒤 `(NO위험자산)` 라벨 부착<br>• 그 외 주식형 등 일반 ETF: **`위험자산`**으로 분류<br>• DC/IRP 계좌의 **위험자산 비중(70% 한도) 및 안전자산 비중(최소 30% 의무)**을 실시간 계산 | `portfolio_calc.py format_holding_name()`<br>`dashboard_service.py`<br>`app.js formatHoldingDisplayName()` |
 
 ---
 
