@@ -66,7 +66,7 @@
 | 영역 | 기능 및 UI 요소 | `index.html` 코드 라인 | `app.js` 담당 함수 및 라인 |
 |---|---|---|---|
 | **상단 헤더** | • 기준일자 종가 배지 (`#header-market-badge`, `#header-base-date`)<br>• 시세 새로고침 버튼 (`#btn-sync-market`, `#sync-icon-wrapper`)<br>• 사용자 ID 뱃지 (`#header-user-short-id`) | L97-L100<br>L114-L118<br>L108-L111 | `renderHeader() L420-L439`<br>`syncMarketPrices() L378-L405`<br>`updateUserHeaderDisplay() L133-L150` |
-| **User ID 바** | • 빠른 User ID 입력창 (`#bar-user-id-input`)<br>• 조회 버튼 (`#btn-bar-apply-user`) | L132-L154 (입력창: L142, 버튼: L146) | `handleApplyCustomUserId() L1849-L1867` |
+| **User ID 바** | • 등록된 User ID 드롭다운 선택창 (`#bar-user-id-select`)<br>• 조회 버튼 (`#btn-bar-apply-user`) | L132-L156 (선택창: L142, 버튼: L148) | `loadRegisteredUsers()`, `switchUser()` |
 | **총 평가금액 카드** | • 총 평가금액 (`#total-valuation`)<br>• 투자원금 (`#total-invested`)<br>• 평가손익 및 수익률 (`#total-pnl`, `#total-return-badge`) | L156-L195<br>(L174, L182, L188, L189) | `renderSummaryCard() L441-L466` |
 | **계좌 탭 바** | • '전체' 및 개별 계좌 필터 탭 (`#group-tabs-container`)<br>• 빠른 계좌 추가 버튼 (`#btn-quick-add-group`) | L197-L218<br>(컨테이너: L212, 버튼: L206) | `renderGroupTabs() L468-L508` |
 | **자산 배분 바** | • '전체' 탭 선택 시 가로 누적 비중 막대 (`#allocation-section`, `#allocation-bar`, `#allocation-legend`) | L220-L239<br>(막대: L232, 범례: L236) | `renderAllocationOrAccountCard() L514-L556` |
@@ -107,17 +107,19 @@
 
 ---
 
-### 4.2 User ID 빠른 입력 및 전환 바 (`#user-identity-bar`)
+### 4.2 User ID 선택 및 빠른 전환 바 (`#user-identity-bar`)
 - **화면 위치**: 상단 헤더 바로 아래 위치한 카드 형태의 바
-- **HTML 코드 위치**: `index.html L132-L154`
-  - 입력창: `L142` (`#bar-user-id-input`)
-  - 조회 버튼: `L146` (`#btn-bar-apply-user`)
-  - 계정 관리 버튼: `L150` (`#btn-bar-open-user-modal`)
-- **담당 JS 코드**: `app.js L1849-L1867` (`handleApplyCustomUserId()`), `L1792-L1842` (`openUserSettingsModal()`)
+- **HTML 코드 위치**: `index.html L132-L156`
+  - 선택창(드롭다운): `L142` (`#bar-user-id-select`)
+  - 조회 버튼: `L148` (`#btn-bar-apply-user`)
+  - 계정 관리 버튼: `L152` (`#btn-bar-open-user-modal`)
+- **담당 JS 코드**: `app.js` (`loadRegisteredUsers()`, `switchUser()`, `openUserSettingsModal()`)
 
 #### 주요 기능
-- User ID를 입력창에 적고 **[조회]** 버튼을 누르거나 **엔터 키**를 치면, `handleApplyCustomUserId()`가 실행되어 해당 사용자의 포트폴리오로 즉시 전환됩니다.
-- 우측 설정 아이콘(`⚙`)을 누르면 계정 상세 모달([모달 6])이 열립니다.
+- DB 테이블에 등록된 모든 User ID 목록을 드롭다운(`select`)으로 불러와 계좌수 및 보유종목수와 함께 표시합니다.
+- 원하는 User ID를 선택하면 즉시 `switchUser()`가 실행되어 해당 사용자의 계좌 목록과 포트폴리오를 화면에 조회합니다.
+- **[조회]** 버튼 클릭 시에도 현재 선택된 User ID의 데이터를 즉시 새로고침합니다.
+- 우측 설정 아이콘(`⚙`)을 누르면 신규 계정 생성 및 세부 설정을 할 수 있는 계정 상세 모달([모달 6])이 열립니다.
 
 ---
 
