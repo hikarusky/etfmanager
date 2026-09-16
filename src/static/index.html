@@ -999,9 +999,14 @@
           <select id="select-registered-users" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500 font-mono">
             <option value="">계정 목록 불러오는 중...</option>
           </select>
-          <button id="btn-switch-selected-user" class="w-full py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 text-slate-200 text-xs font-semibold rounded-xl transition-colors">
-            선택한 사용자로 변경
-          </button>
+          <div class="flex items-center gap-2">
+            <button id="btn-switch-selected-user" class="flex-1 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 text-slate-200 text-xs font-semibold rounded-xl transition-colors">
+              선택한 사용자로 변경
+            </button>
+            <button id="btn-delete-selected-user" class="px-3 py-2 bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800/60 text-rose-300 text-xs font-semibold rounded-xl transition-colors flex items-center gap-1" title="선택한 계정 삭제">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> 삭제
+            </button>
+          </div>
         </div>
       </div>
 
