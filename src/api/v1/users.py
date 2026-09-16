@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from pydantic import BaseModel
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -142,4 +142,45 @@ async def resolve_user_id_endpoint(
         holding_count=h_cnt,
         is_new=is_new,
     )
+
+
+class UserDeleteResponse(BaseModel):
+    status: str
+    user_id: str
+    message: str
+
+
+@router.delete("/{user_id}", response_model=UserDeleteResponse)
+async def delete_user(
+    user_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Delete a user and all their associated groups and holdings.
+    The primary default user cannot be deleted.
+    """
+    if user_id == DEFAULT_USER_ID:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="기본 사용자 계정은 삭제할 수 없습니다.",
+        )
+
+    stmt = select(User).where(User.user_id == user_id)
+    user = (await db.execute(stmt)).scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"사용자 ID '{user_id}'를 찾을 수 없습니다.",
+        )
+
+    await db.delete(user)
+    await db.commit()
+
+    return UserDeleteResponse(
+        status="deleted",
+        user_id=user_id,
+        message=f"사용자 ID '{user_id}'가 성공적으로 삭제되었습니다.",
+    )
+
 
