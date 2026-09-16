@@ -15,7 +15,7 @@
  * 
  * 2. [사용자 ID & 백엔드 통신 계층]
  *    - getUserId, setUserId, updateUserHeaderDisplay:
- *      [적용: index.html L108-L111 #header-user-short-id / L133-L154 #bar-user-id-input]
+ *      [적용: index.html L108-L111 #header-user-short-id / L133-L154 #bar-user-id-select]
  *    - detectWorkingApiBase, apiFetch: FastAPI 백엔드 포트 자동 감지 및 API 호출
  *    - showDashboardErrorBanner:
  *      [적용: index.html L130 <main> 최상단 동적 삽입] 서버 연결 실패 안내 및 재시도 배너
@@ -253,8 +253,8 @@ function setUserId(newId) {
 }
 
 /**
- * 상단 헤더 및 빠른 입력 바의 User ID 텍스트 갱신
- * [적용 대상 코드: index.html L108-L111 #header-user-short-id / L142 #bar-user-id-input]
+ * 상단 헤더 및 빠른 전환 드롭다운의 User ID 텍스트/선택값 갱신
+ * [적용 대상 코드: index.html L108-L111 #header-user-short-id / L142 #bar-user-id-select]
  */
 function updateUserHeaderDisplay() {
   const uid = getUserId();
@@ -269,10 +269,92 @@ function updateUserHeaderDisplay() {
       badge.className = 'font-mono text-[11px] text-blue-400 font-medium';
     }
   }
-  const barInput = document.getElementById('bar-user-id-input');
-  if (barInput && !barInput.matches(':focus')) {
-    barInput.value = uid;
+  const barSelect = document.getElementById('bar-user-id-select');
+  if (barSelect && barSelect.value !== uid) {
+    barSelect.value = uid;
   }
+  const modalSelect = document.getElementById('select-registered-users');
+  if (modalSelect && modalSelect.value !== uid) {
+    modalSelect.value = uid;
+  }
+}
+
+/**
+ * DB에 등록된 사용자(User ID) 목록을 조회하여 상단 바 및 설정 모달의 셀렉트박스에 채움
+ * [적용 대상 코드: index.html L142 #bar-user-id-select / L997 #select-registered-users]
+ */
+async function loadRegisteredUsers() {
+  const barSelect = document.getElementById('bar-user-id-select');
+  const modalSelect = document.getElementById('select-registered-users');
+  const currentId = getUserId();
+
+  try {
+    const users = await apiFetch('/api/v1/users?include_empty=true');
+    if (!Array.isArray(users)) return;
+
+    // 현재 사용자가 목록에 없으면(로컬에만 있는 ID 등) 목록 상단에 임시 포함
+    const exists = users.some((u) => u.user_id === currentId);
+    const userList = exists
+      ? users
+      : [{ user_id: currentId, group_count: 0, holding_count: 0, is_default: false, is_current: true }, ...users];
+
+    const generateOptions = (isModal = false) => {
+      return userList.map((u) => {
+        const isCurrent = (u.user_id === currentId);
+        const isDef = (u.user_id === DEFAULT_PRIMARY_USER_ID);
+        const tag = isDef ? ' ★[기본]' : '';
+        const currentTag = (isModal && isCurrent) ? ' (현재 활성)' : '';
+        const info = u.holding_count > 0 
+          ? `${u.group_count}계좌 / ${u.holding_count}종목` 
+          : (u.group_count > 0 ? `${u.group_count}계좌 / 0종목` : '계좌 없음');
+        const label = `${u.user_id} (${info})${tag}${currentTag}`;
+        return `<option value="${u.user_id}" ${isCurrent ? 'selected' : ''}>${label}</option>`;
+      }).join('');
+    };
+
+    if (barSelect) {
+      barSelect.innerHTML = generateOptions(false);
+      barSelect.value = currentId;
+    }
+
+    if (modalSelect) {
+      modalSelect.innerHTML = generateOptions(true);
+      modalSelect.value = currentId;
+    }
+  } catch (err) {
+    console.error('loadRegisteredUsers failed:', err);
+    if (barSelect && barSelect.children.length <= 1) {
+      barSelect.innerHTML = `<option value="${currentId}">${currentId} (현재 사용자)</option>`;
+    }
+  }
+}
+
+/**
+ * 선택된 User ID로 활성 사용자를 변경하고, 해당 사용자의 계좌/포트폴리오 대시보드를 새로 로드
+ */
+async function switchUser(targetId) {
+  if (!targetId || !targetId.trim()) return;
+  const cleanId = targetId.trim();
+
+  // 사용자 ID 변경 및 계좌 선택 상태 초기화
+  setUserId(cleanId);
+  state.activeGroupId = null; // 이전 사용자의 계좌 선택을 초기화하여 해당 사용자의 첫 계좌가 자동 선택되도록 함
+  updateUserHeaderDisplay();
+
+  const barSelect = document.getElementById('bar-user-id-select');
+  if (barSelect) barSelect.value = cleanId;
+  const modalSelect = document.getElementById('select-registered-users');
+  if (modalSelect) modalSelect.value = cleanId;
+
+  try {
+    await loadDashboard();
+    showToast(`User ID [${cleanId}] 계좌로 전환되었습니다.`, 'success');
+  } catch (err) {
+    showToast(`계좌 로드 실패: ${err.message}`, 'error');
+  }
+
+  // 전환 후 최신 카운트 반영을 위해 목록 다시 갱신
+  await loadRegisteredUsers();
 }
 
 // 백엔드 API 서버 기본 주소
@@ -1895,25 +1977,28 @@ function setupEventListeners() {
   };
 
   // -------------------------------------------------------------------------
-  // [메인 1] User ID 직접 입력 바 이벤트
-  // [적용 대상 코드: index.html L142 #bar-user-id-input, L146 #btn-bar-apply-user, L150 #btn-bar-open-user-modal]
+  // [메인 1] User ID 선택 및 전환 바 이벤트
+  // [적용 대상 코드: index.html L142 #bar-user-id-select, L146 #btn-bar-apply-user, L150 #btn-bar-open-user-modal]
   // -------------------------------------------------------------------------
-  bindClick('btn-bar-apply-user', () => {
-    const barInput = document.getElementById('bar-user-id-input'); // index.html L142
-    if (barInput) handleApplyCustomUserId(barInput.value);
-  });
-
-  bindClick('btn-bar-open-user-modal', openUserSettingsModal); // index.html L150
-
-  const barInputEl = document.getElementById('bar-user-id-input');
-  if (barInputEl) {
-    barInputEl.onkeydown = (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        handleApplyCustomUserId(barInputEl.value);
+  const barSelectEl = document.getElementById('bar-user-id-select');
+  if (barSelectEl) {
+    barSelectEl.onchange = (e) => {
+      const selectedId = e.target.value;
+      if (selectedId) {
+        switchUser(selectedId);
       }
     };
   }
+
+  bindClick('btn-bar-apply-user', () => {
+    const barSelect = document.getElementById('bar-user-id-select');
+    const selectedId = barSelect ? barSelect.value : getUserId();
+    if (selectedId) {
+      switchUser(selectedId);
+    }
+  });
+
+  bindClick('btn-bar-open-user-modal', openUserSettingsModal); // index.html L150
 
   // -------------------------------------------------------------------------
   // [상단 헤더 및 빠른 액션 버튼들]
@@ -2186,27 +2271,8 @@ function setupEventListeners() {
       if (statusBadge) statusBadge.textContent = '조회 실패';
     }
 
-    // DB에 등록된 계정 목록 드롭다운 채우기 (index.html L997)
-    try {
-      const users = await apiFetch('/api/v1/users');
-      if (userSelect && Array.isArray(users)) {
-        userSelect.innerHTML = users.map(u => {
-          const isCurrent = (u.user_id === currentId);
-          const isDef = (u.user_id === DEFAULT_PRIMARY_USER_ID);
-          const tag = isDef ? ' ★[내 원래 등록계좌]' : '';
-          const currentTag = isCurrent ? ' (현재 활성)' : '';
-          const dataTag = u.holding_count > 0 
-            ? ` - ${u.group_count}계좌/${u.holding_count}종목` 
-            : (u.group_count > 0 ? ` - ${u.group_count}계좌/0종목` : ' - 빈 계정');
-          const displayLabel = isDef 
-            ? `${DEFAULT_PRIMARY_USER_ID}${dataTag}${tag}${currentTag}`
-            : `${u.user_id.length > 20 ? u.user_id.substring(0, 18) + '...' : u.user_id}${dataTag}${tag}${currentTag}`;
-          return `<option value="${u.user_id}" ${isCurrent ? 'selected' : ''}>${displayLabel}</option>`;
-        }).join('');
-      }
-    } catch (err) {
-      console.error('Failed to load users list', err);
-    }
+    // DB에 등록된 계정 목록 드롭다운 채우기 (index.html L142 및 L997 공통 갱신)
+    await loadRegisteredUsers();
   }
 
   function closeUserSettingsModal() {
@@ -2234,6 +2300,7 @@ function setupEventListeners() {
         : `User ID [${resolvedId}] 전환 완료 (${res.group_count}계좌, ${res.holding_count}종목)`;
       showToast(msg, 'success');
       await loadDashboard();
+      await loadRegisteredUsers();
     } catch (err) {
       showToast(`User ID 적용 실패: ${err.message}`, 'error');
     }
@@ -2269,7 +2336,10 @@ function setupEventListeners() {
   // 원래 계좌(5계좌/64종목) 원클릭 복원 버튼 (index.html L976)
   const btnRestorePrimary = document.getElementById('btn-restore-primary-user');
   if (btnRestorePrimary) {
-    btnRestorePrimary.onclick = () => handleApplyCustomUserId(DEFAULT_PRIMARY_USER_ID);
+    btnRestorePrimary.onclick = async () => {
+      closeUserSettingsModal();
+      await switchUser(DEFAULT_PRIMARY_USER_ID);
+    };
   }
 
   // 직접 입력한 User ID 적용 버튼 (index.html L987)
@@ -2294,9 +2364,12 @@ function setupEventListeners() {
   // DB 등록 목록에서 선택 변경 버튼 (index.html L1000)
   const btnSwitchSelect = document.getElementById('btn-switch-selected-user');
   if (btnSwitchSelect) {
-    btnSwitchSelect.onclick = () => {
+    btnSwitchSelect.onclick = async () => {
       const val = document.getElementById('select-registered-users').value;
-      handleApplyCustomUserId(val);
+      if (val) {
+        closeUserSettingsModal();
+        await switchUser(val);
+      }
     };
   }
 
@@ -2351,7 +2424,7 @@ if ('serviceWorker' in navigator) {
 if ('caches' in window) {
   caches.keys().then((keys) => {
     keys.forEach((key) => {
-      if (key !== 'etf-portfolio-cache-v14') {
+      if (key !== 'etf-portfolio-cache-v15') {
         caches.delete(key);
       }
     });
@@ -2364,5 +2437,6 @@ if ('caches' in window) {
 document.addEventListener('DOMContentLoaded', () => {
   updateUserHeaderDisplay();
   setupEventListeners();
+  loadRegisteredUsers();
   loadDashboard();
 });
