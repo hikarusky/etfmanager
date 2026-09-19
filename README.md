@@ -50,11 +50,15 @@ uv run python -m src.collector.manager --init
 
 ### 4. 웹 서버 실행
 ```bash
-uv run uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+# 간편 실행 스크립트 사용
+./run.sh
+
+# 또는 직접 실행
+uv run uvicorn src.main:app --reload --host 0.0.0.0 --port 8010
 ```
-- **웹 앱 접속**: [http://localhost:8000/](http://localhost:8000/)
-- **Swagger API 문서**: [http://localhost:8000/docs](http://localhost:8000/docs)
-- **헬스체크 및 DB 격리 확인**: [http://localhost:8000/health](http://localhost:8000/health)
+- **웹 앱 접속**: [http://localhost:8010/](http://localhost:8010/)
+- **Swagger API 문서**: [http://localhost:8010/docs](http://localhost:8010/docs)
+- **헬스체크 및 DB 격리 확인**: [http://localhost:8010/health](http://localhost:8010/health)
 
 ---
 
